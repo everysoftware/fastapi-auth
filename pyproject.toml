@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "app"
+version = "0.1.0"
+description = ""
+authors = ["Ivan Stasevich <pravitel2015ify@gmail.com>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = { extras = ["all"], version = "^0.111.0" }
+sqlalchemy = { extras = ["asyncio"], version = "^2.0.30" }
+gunicorn = "^22.0.0"
+alembic = "^1.13.1"
+asyncpg = "^0.29.0"
+
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.10.0"
+ruff = "^0.4.3"
+pre-commit = "^3.7.0"
+pytest = "^8.2.0"
+pytest-asyncio = "^0.23.6"
+pytest-order = "^1.2.1"
+sqlalchemy-utils = "^0.41.2"
+psycopg2 = "^2.9.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.ruff]
+fix = true
+indent-width = 4
+line-length = 79
+src = ["src"]
+target-version = "py311"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+
+[tool.mypy]
+strict = true
+pretty = true
+plugins = "pydantic.mypy"
+
+[[tool.mypy.overrides]]
+module = "*.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
