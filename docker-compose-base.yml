@@ -9,7 +9,7 @@ services:
       - .env
     volumes:
       - pg_data:/var/lib/postgresql/data
-    restart: on-failure
+    restart: unless-stopped
     expose:
       - "5432"
 
