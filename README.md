@@ -37,12 +37,6 @@ Best development experience with:
 git clone https://github.com/everysoftware/fastapi-template
 ```
 
-2. Install the dependencies:
-
-```bash
-poetry install
-```
-
 3. Create a `.env` file (use the `.env.example` as a reference) and set the environment variables.
 4. Run the application:
 
