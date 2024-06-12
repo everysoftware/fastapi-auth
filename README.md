@@ -37,8 +37,8 @@ Best development experience with:
 git clone https://github.com/everysoftware/fastapi-template
 ```
 
-3. Create a `.env` file (use the `.env.example` as a reference) and set the environment variables.
-4. Run the application:
+2. Create a `.env` file (use the `.env.example` as a reference) and set the environment variables.
+3. Run the application:
 
 ```bash
 make up
