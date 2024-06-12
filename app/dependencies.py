@@ -15,8 +15,8 @@ async def get_uow() -> AsyncGenerator[UOW, None]:
 UOWDep = Annotated[UOW, Depends(get_uow)]
 
 
-async def get_gateway(uow: UOWDep) -> Gateway:
-    return Gateway(uow)
+async def get_gateway() -> Gateway:
+    return Gateway()
 
 
 GWDep = Annotated[Gateway, Depends(get_gateway)]

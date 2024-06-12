@@ -1,4 +1,4 @@
-from fastabc.settings import PostgresDsn, APIModel, load_env
+from onepattern.settings import PostgresDsn, APIModel, load_env
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

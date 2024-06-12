@@ -1,10 +1,10 @@
 from typing import Type
 from typing import TypeVar, Any
 
-from fastabc import (
-    Page as FAPage,
-    PageParams as FAParams,
-    EntityModel as FAEntityModel,
+from onepattern import (
+    Page as OPPage,
+    PageParams as OPParams,
+    EntityModel as OPEntityModel,
 )
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -25,6 +25,6 @@ class MainModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-Page = FAPage
-PageParams = FAParams
-EntityModel = FAEntityModel
+Page = OPPage
+PageParams = OPParams
+EntityModel = OPEntityModel

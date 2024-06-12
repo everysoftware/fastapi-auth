@@ -1,4 +1,4 @@
-from fastabc import DeclarativeBase, AlchemyEntity
+from onepattern import DeclarativeBase, AlchemyEntity
 
 
 class Base(DeclarativeBase):

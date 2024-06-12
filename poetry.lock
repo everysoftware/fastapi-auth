@@ -198,22 +198,6 @@ dnspython = ">=2.0.0"
 idna = ">=2.0.0"
 
 [[package]]
-name = "fastabc"
-version = "0.1.8"
-description = "Ready-made FastAPI abstractions: repository, unit of work, service etc."
-optional = false
-python-versions = "<4.0,>=3.11"
-files = [
-    {file = "fastabc-0.1.8-py3-none-any.whl", hash = "sha256:7b13f6549877b4737fa8519347272fbc834b11ca5292e4f7c9786811c2b51446"},
-    {file = "fastabc-0.1.8.tar.gz", hash = "sha256:9db255b5d378c5c660ed7152c0912f618fb08066b8fb6302dbc6259d2ee7d6f0"},
-]
-
-[package.dependencies]
-pydantic = ">=2.7.3,<3.0.0"
-pydantic-settings = ">=2.3.1,<3.0.0"
-sqlalchemy = ">=2.0.30,<3.0.0"
-
-[[package]]
 name = "fastapi"
 version = "0.111.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -727,6 +711,22 @@ files = [
     {file = "nodeenv-1.9.0-py2.py3-none-any.whl", hash = "sha256:508ecec98f9f3330b636d4448c0f1a56fc68017c68f1e7857ebc52acf0eb879a"},
     {file = "nodeenv-1.9.0.tar.gz", hash = "sha256:07f144e90dae547bf0d4ee8da0ee42664a42a04e02ed68e06324348dafe4bdb1"},
 ]
+
+[[package]]
+name = "onepattern"
+version = "0.1.9"
+description = "Scalable data access patterns for rapid API development, using SQLAlchemy & Pydantic."
+optional = false
+python-versions = "<4.0,>=3.11"
+files = [
+    {file = "onepattern-0.1.9-py3-none-any.whl", hash = "sha256:5298f253de385a64cdfb48bec9946002945ca1b509aa377fde75441cb026c90b"},
+    {file = "onepattern-0.1.9.tar.gz", hash = "sha256:b655b3cb2cc78200f77a4682dd9ab80351ade3f7ef29ca938e266afd991b4f66"},
+]
+
+[package.dependencies]
+pydantic = ">=2.7.3,<3.0.0"
+pydantic-settings = ">=2.3.1,<3.0.0"
+sqlalchemy = ">=2.0.30,<3.0.0"
 
 [[package]]
 name = "orjson"
@@ -1738,4 +1738,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "1610f7464ef9d72a61a0675825ce92b2417f39fadbc2c9be722adadbffbc26a5"
+content-hash = "cbd9845821533f5fa5a8b5857c9fa501bb10e50ca0bfb7a2cf60a2de9a8c3e69"

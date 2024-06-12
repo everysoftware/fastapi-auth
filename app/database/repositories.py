@@ -1,3 +1,3 @@
-from fastabc import AlchemyRepository
+from onepattern import AlchemyRepository
 
 SARepository = AlchemyRepository

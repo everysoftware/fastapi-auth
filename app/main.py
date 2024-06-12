@@ -1,13 +1,13 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import settings
 
 # Routers
-routers = []
+routers: list[APIRouter] = []
 
 
 @asynccontextmanager
@@ -28,7 +28,7 @@ app = FastAPI(
 
 
 app.add_middleware(
-    CORSMiddleware,  # type: ignore[arg-type]
+    CORSMiddleware,  # noqa
     allow_origins=settings.app.cors_origins,
     allow_credentials=True,
     allow_methods=settings.app.cors_methods,
