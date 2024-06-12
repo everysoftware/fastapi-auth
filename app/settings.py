@@ -1,13 +1,12 @@
+from fastabc.settings import PostgresDsn, APIModel, load_env
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.skeleton.settings import Postgres, API, load_env
 
-
-class PgSettings(BaseSettings, Postgres):
+class PgSettings(BaseSettings, PostgresDsn):
     model_config = SettingsConfigDict(extra="allow", env_prefix="postgres_")
 
 
-class AppSettings(BaseSettings, API):
+class AppSettings(BaseSettings, APIModel):
     model_config = SettingsConfigDict(extra="allow", env_prefix="app_")
 
 

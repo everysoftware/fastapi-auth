@@ -1,8 +1,6 @@
-from __future__ import annotations
-
-from app.skeleton.orm import BaseUOW
+from fastabc import AlchemyUOW
 
 
-class UOW(BaseUOW):
+class UOW(AlchemyUOW):
     async def on_open(self) -> None:
         pass

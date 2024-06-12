@@ -2,8 +2,8 @@
 
 set -e
 
-# You can put other setup logic here
 alembic upgrade head
 
+# You can put other setup logic here
 # Evaluating passed command:
 eval "exec $@"

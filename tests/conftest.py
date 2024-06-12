@@ -11,7 +11,7 @@ from starlette.testclient import TestClient
 from tests.utils.alembic import alembic_config_from_url
 from tests.utils.uow import TestUOW
 from app.settings import settings
-from app.skeleton.orm import SkeletonBase
+from fastabc import DeclarativeBase
 from app.database.connection import (
     async_engine_factory,
     get_async_session_factory,
@@ -54,7 +54,7 @@ def session_factory(engine):
 
 async def delete_all(engine):
     async with engine.connect() as conn:
-        for table in reversed(SkeletonBase.metadata.sorted_tables):
+        for table in reversed(DeclarativeBase.metadata.sorted_tables):
             # Clean tables in such order that tables which depend on another go first
             await conn.execute(table.delete())
         await conn.commit()

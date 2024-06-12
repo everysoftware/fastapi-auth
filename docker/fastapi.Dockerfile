@@ -4,92 +4,80 @@ ARG PYTHON_VERSION=3.12-bullseye
 ARG POETRY_VERSION=1.8.2
 
 #
-# Stage: staging
+# Stage: base
 #
 
-FROM python:$PYTHON_VERSION AS staging
+FROM python:$PYTHON_VERSION AS base
 ARG APP_NAME
 ARG APP_PATH
 ARG POETRY_VERSION
 
-# Python process will be ran only once in the container
-# so we don’t need to write the compiled Python storage (*.pyc) to disk
-# Make sure Python outputs are sent straight to terminal
-# Make sure Python traceback are dumped (even on segfaults for instance)
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONFAULTHANDLER=1
 
-# We won’t update the pip version in any case
-# Default timeout is only 15 seconds
-# Fixing Poetry version
-# Instead of /root
-# Make sure the .venv directory will be in the build directory
-# No prompt from Poetry
-# Path for building stages
-# Add the virtual environment to path in a separate ENVline to use previously defined environment variables.
-# Update path with Poetry and virtual env path.
 ENV POETRY_VERSION=$POETRY_VERSION
 ENV POETRY_HOME="/opt/poetry"
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV POETRY_NO_INTERACTION=1
 
-# Install Poetry - respects $POETRY_VERSION & $POETRY_HOME
+# Set environment
+ENV APP_NAME=$APP_NAME
+ENV NO_ENV_FILE=1
+
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-# Import our project storage
 WORKDIR $APP_PATH
 COPY ./poetry.lock ./pyproject.toml ./
-COPY ./$APP_NAME ./$APP_NAME
+
+RUN poetry install --no-dev
+RUN poetry export --without-hashes --without dev -f requirements.txt -o requirements.txt
 
 #
-# Stage: build
+# Stage: dev
 #
-FROM staging as build
-ARG APP_PATH
-
-WORKDIR $APP_PATH
-
-# Create a dummy README.md file
-RUN touch README.md
-# Build wheel
-RUN poetry build --format wheel
-# Export requirements
-RUN poetry export --format requirements.txt --output requirements.txt --without-hashes
-
-#
-# Stage: production
-#
-FROM python:$PYTHON_VERSION as production
+FROM base as dev
 ARG APP_NAME
 ARG APP_PATH
 
-# To show .env file is not needed
-ENV NO_ENV_FILE=1
+# Copy files
+WORKDIR $APP_PATH
+COPY ./$APP_NAME ./$APP_NAME
+COPY ./migrations ./migrations
+COPY ./alembic.ini ./
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONFAULTHANDLER=1
+COPY ./docker/entrypoint-dev.sh /entrypoint-dev.sh
+RUN chmod +x /entrypoint-dev.sh
+ENTRYPOINT ["/entrypoint-dev.sh"]
+CMD ["uvicorn \"$APP_NAME:app\" --host 0.0.0.0 --port 8000"]
 
-ENV PIP_NO_CACHE_DIR=off
+#
+# Stage: prod
+#
+FROM python:$PYTHON_VERSION as prod
+ARG APP_NAME
+ARG APP_PATH
+
+ENV PIP_NO_CACHE_DIR=on
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on
 ENV PIP_DEFAULT_TIMEOUT=100
 
-# Get build artifact wheel and install it respecting dependency versions
 WORKDIR $APP_PATH
-COPY --from=build $APP_PATH/dist/*.whl ./
-RUN pip install ./$APP_NAME*.whl
+COPY --from=base $APP_PATH/requirements.txt ./
+RUN python -m pip install -r requirements.txt
 
-# Export APP_NAME as environment variable for the CMD
+# Set environment
 ENV APP_NAME=$APP_NAME
+ENV NO_ENV_FILE=1
 
-# Migrations
-COPY ./alembic.ini ./
+# Copy files
+COPY ./$APP_NAME ./$APP_NAME
 COPY ./migrations ./migrations
+COPY ./alembic.ini ./
 
 # Entrypoint script
-COPY ./docker/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-ENTRYPOINT ["/docker-entrypoint.sh"]
+COPY ./docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["gunicorn -w 4 -k uvicorn.workers.UvicornWorker \"$APP_NAME:app\" -b 0.0.0.0:8000"]

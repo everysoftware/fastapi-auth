@@ -1,6 +1,6 @@
 version: "3.7"
 
 services:
-  db:
-    ports:
-      - "5432:5432"
+  fastapi:
+    build:
+      target: dev

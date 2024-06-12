@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: docker/fastapi.Dockerfile
+      target: prod
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - "./app:/opt/app/app"
+
+volumes:
+  pg_data:

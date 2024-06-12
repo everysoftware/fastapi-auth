@@ -1,3 +1,3 @@
-from app.skeleton.orm import BaseRepository
+from fastabc import AlchemyRepository
 
-SARepository = BaseRepository
+SARepository = AlchemyRepository

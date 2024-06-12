@@ -1,4 +1,4 @@
-from app.core import UOW
+from app.core.uow import UOW
 
 
 class TestUOW(UOW):

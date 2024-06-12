@@ -1,7 +1,9 @@
-from app.skeleton import SkeletonBase
-
-PrimaryKey = int
+from fastabc import DeclarativeBase, AlchemyEntity
 
 
-class Base(SkeletonBase):
+class Base(DeclarativeBase):
+    __abstract__ = True
+
+
+class EntityBase(Base, AlchemyEntity):
     __abstract__ = True
