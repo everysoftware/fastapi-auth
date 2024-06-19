@@ -1,7 +1,7 @@
-from onepattern import DeclarativeBase, AlchemyEntity
+from onepattern import AlchemyBase, AlchemyEntity
 
 
-class Base(DeclarativeBase):
+class Base(AlchemyBase):
     __abstract__ = True
 
 

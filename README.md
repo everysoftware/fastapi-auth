@@ -16,7 +16,7 @@ Main features of this template:
   packages called containers.
 - **Uvicorn & Gunicorn**: Lightning-fast ASGI server implementation, using uvloop and httptools. Serving
   your FastAPI app with Uvicorn and Gunicorn.
-- **OnePattern**: Scalable data access patterns for rapid API development, using SQLAlchemy & Pydantic.
+- **OnePattern**: One pattern for accessing data powered by SQLAlchemy & Pydantic.
 
 Best development experience with:
 
