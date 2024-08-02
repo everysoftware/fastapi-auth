@@ -1,6 +1,6 @@
 from abc import ABC
 
-from app.core.uow import UOW
+from app.database.uow import UOW
 
 
 class Service(ABC):

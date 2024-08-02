@@ -163,3 +163,4 @@ cython_debug/
 *.env
 .dev.env
 !.env.example
+certs

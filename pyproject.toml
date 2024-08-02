@@ -13,7 +13,8 @@ sqlalchemy = { extras = ["asyncio"], version = "^2.0.30" }
 gunicorn = "^22.0.0"
 alembic = "^1.13.1"
 asyncpg = "^0.29.0"
-onepattern = "^0.2.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+pyjwt = {extras = ["crypto"], version = "^2.9.0"}
 
 
 [tool.poetry.group.dev.dependencies]

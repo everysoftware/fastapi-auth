@@ -1,13 +1,11 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any
+from typing import AsyncGenerator
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routing import main_router
 from app.settings import settings
-
-# Routers
-routers: list[APIRouter] = []
 
 
 @asynccontextmanager
@@ -21,30 +19,17 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     lifespan=lifespan,
-    title=settings.app.title,
-    version=settings.app.version,
+    title=settings.title,
+    version=settings.version,
     summary="No description",
 )
 
-
 app.add_middleware(
     CORSMiddleware,  # noqa
-    allow_origins=settings.app.cors_origins,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=settings.app.cors_methods,
-    allow_headers=settings.app.cors_headers,
+    allow_methods=settings.cors_methods,
+    allow_headers=settings.cors_headers,
 )
 
-
-for router in routers:
-    app.include_router(router, prefix="/api/v1")
-
-
-@app.get("/healthcheck", include_in_schema=False)
-def healthcheck() -> dict[str, Any]:
-    return {"status": "ok"}
-
-
-@app.get("/hc", include_in_schema=False)
-def hc() -> dict[str, Any]:
-    return {"status": "ok"}
+app.include_router(main_router)

@@ -2,9 +2,8 @@ from typing import AsyncGenerator, Annotated
 
 from fastapi import Depends
 
-from app.core.gateway import Gateway
-from app.core.uow import UOW
 from app.database.connection import async_session_factory
+from app.database.uow import UOW
 
 
 async def get_uow() -> AsyncGenerator[UOW, None]:
@@ -13,10 +12,3 @@ async def get_uow() -> AsyncGenerator[UOW, None]:
 
 
 UOWDep = Annotated[UOW, Depends(get_uow)]
-
-
-async def get_gateway() -> Gateway:
-    return Gateway()
-
-
-GWDep = Annotated[Gateway, Depends(get_gateway)]

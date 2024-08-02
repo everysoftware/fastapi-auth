@@ -1,9 +1,9 @@
 # Import models for alembic
 
-from app.models import Base
-from app.testing import Waffle
+from app.users.models import UserOrm
+from .base import BaseOrm
 
 __all__ = [
-    "Base",
-    "Waffle",
+    "BaseOrm",
+    "UserOrm",
 ]

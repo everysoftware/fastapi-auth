@@ -1,59 +1,43 @@
 import os
-from typing import Literal, Sequence
+from pathlib import Path
+from typing import Literal
 
 from dotenv import load_dotenv
-from onepattern.settings import PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class PgSettings(BaseSettings, PostgresDsn):
-    model_config = SettingsConfigDict(extra="allow", env_prefix="postgres_")
-
-
 class AppSettings(BaseSettings):
-    title: str = "Test"
+    title: str = "FastAPI"
     version: str = "0.1.0"
     env: Literal["dev", "prod", "test"] = "dev"
     debug: bool = False
+
+    jwt_private_key: Path = Path("certs") / "jwt-private.pem"
+    jwt_public_key: Path = Path("certs") / "jwt-public.pem"
+    jwt_algorithm: str = "RS256"
+    jwt_access_token_expire: int = 15
 
     cors_headers: list[str] = ["*"]
     cors_methods: list[str] = ["*"]
     cors_origins: list[str] = ["*"]
 
+    db_dsn: str
+
     model_config = SettingsConfigDict(extra="allow", env_prefix="app_")
 
 
-class Settings:
-    db: PgSettings
-    app: AppSettings
-
-    def __init__(self) -> None:
-        self.db = PgSettings()
-        self.app = AppSettings()
+CANCEL_VAR = "NO_ENV_FILE"
+ENV_FILES = [".env"]
 
 
-def load_env(
-    env_files: Sequence[str] = (".dev.env", ".prod.env", ".env"),
-    cancel_var: str | None = "NO_ENV_FILE",
-) -> str | None:
-    """
-    Prioritized environment loading.
-
-    Return the loaded file path or raise an exception if no file is found.
-    Return `None` if the `cancel_var` is set in the environment.
-    """
-    if cancel_var and os.getenv(cancel_var):
+def load_env() -> None:
+    if os.getenv(CANCEL_VAR):
         return None
-    for file in env_files:
+    for file in ENV_FILES:
         if load_dotenv(file):
-            return file
-    raise ValueError(f"Environment file not found: {env_files}")
+            return
+    raise ValueError(f"Environment file not found: {ENV_FILES}")
 
 
-def get_settings() -> Settings:
-    load_env()
-    settings_ = Settings()
-    return settings_
-
-
-settings = get_settings()
+load_env()
+settings = AppSettings()
