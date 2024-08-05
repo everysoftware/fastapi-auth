@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Depends, Header
+from fastapi import HTTPException, Depends
+from fastapi.security import APIKeyCookie
 from starlette import status
 
 from app.dependencies import UOWDep
@@ -30,8 +31,11 @@ async def get_user_create(
     return creation
 
 
+cookie_scheme = APIKeyCookie(name="access_token")
+
+
 async def get_current_user(
-    users: UserServiceDep, access_token: str = Header()
+    users: UserServiceDep, access_token: str = Depends(cookie_scheme)
 ) -> UserRead:
     try:
         user = await users.validate(access_token)

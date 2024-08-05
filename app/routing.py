@@ -8,7 +8,7 @@ from app.users.router import auth_router, user_router
 protected_router = APIRouter(dependencies=[Depends(get_current_user)])
 protected_router.include_router(user_router)
 
-main_router = APIRouter(prefix="/api/v1")
+main_router = APIRouter()
 main_router.include_router(auth_router)
 main_router.include_router(protected_router)
 

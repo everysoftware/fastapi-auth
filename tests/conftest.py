@@ -5,29 +5,27 @@ import pytest
 import pytest_asyncio
 from alembic.command import upgrade as alembic_upgrade
 from alembic.script import ScriptDirectory
-from sqlalchemy_utils import create_database, drop_database
-from starlette.testclient import TestClient
+from sqlalchemy import make_url
 
-from app import app
+from app.database import BaseOrm
 from app.database.connection import (
     async_engine_factory,
     get_async_session_factory,
 )
-from app.models import Base
 from app.settings import settings
+from tests.utils.alchemy import create_database_async, drop_database_async
 from tests.utils.alembic import alembic_config_from_url
 from tests.utils.uow import TestUOW
 
 
-@pytest.fixture(scope="session")
-def database_dsn():
-    tmp_db_name = f"__test_{uuid.uuid4().hex}__"
-    tmp_db_url = settings.db.get_dsn(tmp_db_name)
-    async_tmp_db_url = settings.db.get_dsn(tmp_db_name, sync=False)
-
-    create_database(tmp_db_url)
-    yield async_tmp_db_url
-    drop_database(tmp_db_url)
+@pytest_asyncio.fixture(scope="session")
+async def database_dsn():
+    url = make_url(settings.db_dsn)
+    temp_db = f"test_{uuid.uuid4().hex}"
+    url = url.set(database=temp_db)
+    await create_database_async(url)
+    yield url.render_as_string(hide_password=False)
+    await drop_database_async(url)
 
 
 @pytest.fixture(scope="session")
@@ -54,14 +52,14 @@ def session_factory(engine):
 
 async def delete_all(engine):
     async with engine.connect() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(BaseOrm.metadata.sorted_tables):
             # Clean tables in such order that tables which depend on another go first
             await conn.execute(table.delete())
         await conn.commit()
 
 
 @pytest_asyncio.fixture
-async def active_session(session_factory):
+async def session(session_factory):
     async with session_factory() as session:
         yield session
 
@@ -74,8 +72,3 @@ async def uow(engine, session_factory):
         yield test_uow
 
     await delete_all(engine)
-
-
-@pytest.fixture(scope="session")
-def client():
-    return TestClient(app)

@@ -21,7 +21,7 @@ class UserRepository(AlchemyRepository):
         return validate(user, UserRead)
 
     async def get_by_email(self, email: str) -> UserRead | None:
-        stmt = select(UserOrm).where(UserOrm.email == email)
+        stmt = select(UserOrm).where(UserOrm.email == email)  # type: ignore[arg-type]
         result = await self.session.execute(stmt)
         user = result.scalar()
         return validate(user, UserRead)

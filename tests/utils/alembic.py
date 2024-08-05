@@ -13,7 +13,7 @@ from alembic.config import Config
 from app.settings import settings
 
 PROJECT_PATH = Path(__file__).parent.parent.parent.resolve()
-DEFAULT_PG_URL = settings.db.async_dsn
+DEFAULT_PG_URL = settings.db_dsn
 
 
 def make_alembic_config(

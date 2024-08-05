@@ -22,6 +22,7 @@ app = FastAPI(
     title=settings.title,
     version=settings.version,
     summary="No description",
+    root_path="/api/v1",
 )
 
 app.add_middleware(

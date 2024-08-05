@@ -16,7 +16,8 @@ Main features of this template:
   packages called containers.
 - **Uvicorn & Gunicorn**: Lightning-fast ASGI server implementation, using uvloop and httptools. Serving
   your FastAPI app with Uvicorn and Gunicorn.
-- **OnePattern**: One pattern for accessing data powered by SQLAlchemy & Pydantic.
+- **JWT authentication**: JSON Web Tokens are an open, industry-standard RFC 7519 method for representing
+  claims securely between two parties.
 
 Best development experience with:
 
@@ -37,8 +38,15 @@ Best development experience with:
 git clone https://github.com/everysoftware/fastapi-template
 ```
 
-2. Create a `.env` file (use the `.env.example` as a reference) and set the environment variables.
-3. Run the application:
+2. Generate RSA keys:
+
+```bash
+openssl genrsa -out certs/private.pem 2048
+openssl rsa -in certs/private.pem -pubout -out certs/public.pem
+```
+
+3. Create a `.env` file. Use the `.env.example` as a reference.
+4. Run the application:
 
 ```bash
 make up

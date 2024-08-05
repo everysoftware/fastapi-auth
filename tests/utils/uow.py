@@ -1,7 +1,5 @@
-from app.core.uow import UOW
+from app.database.uow import UOW
 
 
 class TestUOW(UOW):
-    """Mocked UOW is used for integration tests."""
-
     pass
