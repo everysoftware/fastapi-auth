@@ -2,13 +2,13 @@
 
 import pytest
 from alembic.command import downgrade, upgrade
-from alembic.config import Config
 from alembic.script import Script, ScriptDirectory
 
+from tests.conftest import alembic_config
 from tests.utils.alembic import alembic_config_from_url
 
 
-def get_revisions():
+def get_revisions() -> list[Script]:
     """Get revisions for stairway test."""
     # Create Alembic configuration object
     # (we don't need database for getting revisions list)
@@ -25,13 +25,11 @@ def get_revisions():
     return revisions
 
 
-# Migration tests come first
-@pytest.mark.order(0)
 @pytest.mark.parametrize("revision", get_revisions())
-def test_migrations_stairway(alembic_config: Config, revision: Script):
+def test_migrations_stairway(revision: Script) -> None:
     """Stairway tests."""
     upgrade(alembic_config, revision.revision)
 
     # We need -1 for downgrading first migration (its down_revision is None)
-    downgrade(alembic_config, revision.down_revision or "-1")
+    downgrade(alembic_config, revision.down_revision or "-1")  # type: ignore[arg-type]
     upgrade(alembic_config, revision.revision)

@@ -15,7 +15,7 @@ def naive_utc() -> datetime.datetime:
 def dump(instance: DeclarativeBase) -> dict[str, Any]:
     return {
         c.key: getattr(instance, c.key)
-        for c in inspect(instance).mapper.column_attrs  # type: ignore[attr-def]
+        for c in inspect(instance).mapper.column_attrs  # noqa
     }
 
 
@@ -58,7 +58,7 @@ def validate[ResponseModel: BaseModel](
 ) -> ResponseModel | None: ...
 
 
-def validate[ResponseModel](
+def validate[ResponseModel: BaseModel](
     instance: DeclarativeBase | None, response_model: type[ResponseModel]
 ) -> ResponseModel | None:
     if instance is None:

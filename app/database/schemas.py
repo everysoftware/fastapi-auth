@@ -5,14 +5,9 @@ from typing import Literal, cast
 
 from pydantic import Field, computed_field, BaseModel, UUID4
 
-from app.database.types import ID
 from app.schemas import Base
 
 type OrderType = Literal["asc", "desc"]
-
-
-class IDModel(BaseModel):
-    id: ID
 
 
 class UUIDModel(BaseModel):
@@ -47,7 +42,7 @@ class PageParams(Base):
     offset: int = Field(0, ge=0)
     sort: str = "updated_at:desc"
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore
     @property
     def sort_params(self) -> list[SortParam]:
         sort = self.sort.split(",")
@@ -57,7 +52,7 @@ class PageParams(Base):
 class Page[ItemModel: Base](Base):
     items: list[ItemModel]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore
     @property
     def total(self) -> int:
         return len(self.items)

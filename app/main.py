@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routing import main_router
-from app.settings import settings
+from app.config import settings
 
 
 @asynccontextmanager

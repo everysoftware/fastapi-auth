@@ -5,7 +5,6 @@ from sqlalchemy import func, Identity
 from sqlalchemy.orm import mapped_column, Mapped
 
 from app.database import utils
-from app.database.types import ID, ID_UUID, GUID
 
 
 # https://docs.sqlalchemy.org/en/20/core/defaults.html
@@ -17,15 +16,14 @@ class Mixin:
     pass
 
 
-class IDMixin(Mixin):
-    id: Mapped[ID] = mapped_column(
+class IntIDMixin(Mixin):
+    id: Mapped[int] = mapped_column(
         Identity(), primary_key=True, sort_order=-100
     )
 
 
-class UUIDMixin(Mixin):
-    id: Mapped[ID_UUID] = mapped_column(
-        GUID,
+class IDMixin(Mixin):
+    id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
         default=uuid.uuid4,
         sort_order=-100,

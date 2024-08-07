@@ -1,3 +1,6 @@
+from typing import Any
+
+from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
     async_sessionmaker,
@@ -5,18 +8,18 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 
-from app.settings import settings
+from app.config import settings
 
 
-def async_engine_factory(dsn: str) -> AsyncEngine:
-    return create_async_engine(dsn, echo=True)
+def get_async_engine(dsn: str | URL, **kwargs: Any) -> AsyncEngine:
+    return create_async_engine(dsn, echo=True, pool_pre_ping=True, **kwargs)
 
 
 def get_async_session_factory(
-    engine: AsyncEngine,
+    engine: AsyncEngine, **kwargs: Any
 ) -> async_sessionmaker[AsyncSession]:
-    return async_sessionmaker(engine, expire_on_commit=False)
+    return async_sessionmaker(engine, expire_on_commit=False, **kwargs)
 
 
-async_engine = async_engine_factory(settings.db_dsn)
+async_engine = get_async_engine(settings.db_dsn)
 async_session_factory = get_async_session_factory(async_engine)

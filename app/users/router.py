@@ -4,7 +4,7 @@ from fastapi import Depends, APIRouter, HTTPException, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
-from app.settings import settings
+from app.config import settings
 from app.users.dependencies import (
     get_user_create,
     UserServiceDep,
@@ -48,7 +48,7 @@ async def login(
 
 
 @auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout():
+def logout() -> Response:
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
     # Not always works
     # response.delete_cookie(key="access_token")
@@ -65,7 +65,7 @@ def logout():
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@user_router.post("/me", status_code=status.HTTP_200_OK)
+@user_router.get("/me", status_code=status.HTTP_200_OK)
 async def me(user: UserDep) -> UserRead:
     return user
 

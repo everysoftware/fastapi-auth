@@ -1,10 +1,10 @@
 import uuid
 from datetime import timedelta, datetime, UTC
-from typing import Any
+from typing import Any, cast
 
 import jwt
 
-from app.settings import settings
+from app.config import settings
 
 
 def encode_jwt(
@@ -43,4 +43,4 @@ def decode_jwt(
         public_key,
         algorithms=[algorithm],
     )
-    return decoded
+    return cast(dict[str, Any], decoded)

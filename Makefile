@@ -37,7 +37,7 @@ format:
 .PHONY: lint
 lint:
 	ruff check $(APP_NAME) $(TESTS_PATH) --fix
-	mypy $(APP_NAME) --install-types
+	mypy $(APP_NAME) --install-types --enable-incomplete-feature=NewGenericSyntax
 
 PHONY: generate
 generate:

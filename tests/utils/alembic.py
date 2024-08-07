@@ -1,23 +1,21 @@
 """Alembic utils for tests."""
 
-import importlib
 import os
 from argparse import Namespace
-from collections import defaultdict, namedtuple
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional
 
+from alembic.command import upgrade as alembic_upgrade
 from alembic.config import Config
-
-from app.settings import settings
+from alembic.script import ScriptDirectory
+from sqlalchemy import URL
+from starlette.concurrency import run_in_threadpool
 
 PROJECT_PATH = Path(__file__).parent.parent.parent.resolve()
-DEFAULT_PG_URL = settings.db_dsn
 
 
 def make_alembic_config(
-    cmd_opts: Namespace | SimpleNamespace, base_path: str = PROJECT_PATH
+    cmd_opts: Namespace | SimpleNamespace, base_path: str = str(PROJECT_PATH)
 ) -> Config:
     """Make alembic config for stairway integration tests."""
     # Replace path to alembic.ini file to absolute
@@ -25,11 +23,14 @@ def make_alembic_config(
         cmd_opts.config = os.path.join(base_path, cmd_opts.config)
 
     config = Config(
-        file_=cmd_opts.config, ini_section=cmd_opts.name, cmd_opts=cmd_opts
+        file_=cmd_opts.config,
+        ini_section=cmd_opts.name,
+        cmd_opts=cmd_opts,  # type: ignore[arg-type]
     )
 
     # Replace path to alembic folder to absolute
     alembic_location = config.get_main_option("script_location")
+    assert alembic_location is not None
     if not os.path.isabs(alembic_location):
         config.set_main_option(
             "script_location", os.path.join(base_path, alembic_location)
@@ -40,8 +41,10 @@ def make_alembic_config(
     return config
 
 
-def alembic_config_from_url(pg_url: Optional[str] = None) -> Config:
+def alembic_config_from_url(pg_url: URL | str | None = None) -> Config:
     """Provides Python object, representing alembic.ini file."""
+    if isinstance(pg_url, URL):
+        pg_url = pg_url.render_as_string(hide_password=False)
     cmd_options = SimpleNamespace(
         config="alembic.ini",
         name="alembic",
@@ -49,58 +52,14 @@ def alembic_config_from_url(pg_url: Optional[str] = None) -> Config:
         raiseerr=False,
         x=None,
     )
-
     return make_alembic_config(cmd_options)
 
 
-# Represents test for 'data' migration.
-# Contains revision to be tested, it's previous revision, and callbacks that
-# could be used to perform validation.
-MigrationValidationParamsGroup = namedtuple(
-    "MigrationData",
-    ["rev_base", "rev_head", "on_init", "on_upgrade", "on_downgrade"],
-)
-
-
-def load_migration_as_module(file: str):
-    """Allows to import alembic migration as a module."""
-    return importlib.machinery.SourceFileLoader(  # type: ignore[attr-defined]
-        file, os.path.join(PROJECT_PATH, "alembic", "versions", file)
-    ).load_module()
-
-
-def make_validation_params_groups(
-    *migrations,
-) -> list[MigrationValidationParamsGroup]:
-    """Creates objects that describe test for data migrations.
-
-    See examples in tests/data_migrations/migration_*.py.
-    """
-    data = []
-    for migration in migrations:
-        # Ensure migration has all required params
-        for required_param in ["rev_base", "rev_head"]:
-            if not hasattr(migration, required_param):
-                raise RuntimeError(
-                    "{param} not specified for {migration}".format(
-                        param=required_param, migration=migration.__name__
-                    )
-                )
-
-        # Set up callbacks
-        callbacks = defaultdict(lambda: lambda *args, **kwargs: None)
-        for callback in ["on_init", "on_upgrade", "on_downgrade"]:
-            if hasattr(migration, callback):
-                callbacks[callback] = getattr(migration, callback)
-
-        data.append(
-            MigrationValidationParamsGroup(
-                rev_base=migration.rev_base,
-                rev_head=migration.rev_head,
-                on_init=callbacks["on_init"],
-                on_upgrade=callbacks["on_upgrade"],
-                on_downgrade=callbacks["on_downgrade"],
-            )
-        )
-
-    return data
+async def alembic_upgrade_head(config: Config) -> None:
+    revisions_dir = ScriptDirectory.from_config(config)
+    if revisions_dir.get_current_head():
+        await run_in_threadpool(
+            alembic_upgrade,
+            config,
+            revisions_dir.get_current_head(),  # type: ignore[arg-type]
+        )  # noqa

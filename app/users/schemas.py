@@ -9,7 +9,7 @@ class UserBase(Base):
 
 
 class UserRead(UserBase, UUIDModel, TimestampModel):
-    hashed_password: str = Field(exclude=True)
+    hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
     is_verified: bool

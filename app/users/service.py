@@ -1,6 +1,7 @@
 from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
+from app.database.types import ID
 from app.database.uow import UOW
 from app.service import Service
 from app.users import jwt_helper
@@ -44,13 +45,13 @@ class UserService(Service):
             raise InvalidToken(f"User {payload["sub"]} not found")
         return user
 
-    async def get(self, user_id: str) -> UserRead | None:
+    async def get(self, user_id: ID) -> UserRead | None:
         return await self.uow.users.get(user_id)
 
     async def get_by_email(self, email: str) -> UserRead | None:
         return await self.uow.users.get_by_email(email)
 
-    async def update(self, user_id: str, update: UserUpdate) -> UserRead:
+    async def update(self, user_id: ID, update: UserUpdate) -> UserRead:
         update_data = update.model_dump(exclude_none=True)
         if update.password is not None:
             update_data["hashed_password"] = self.pwd_context.hash(
@@ -58,5 +59,5 @@ class UserService(Service):
             )
         return await self.uow.users.update(user_id, update_data)
 
-    async def delete(self, user_id: str) -> UserRead:
+    async def delete(self, user_id: ID) -> UserRead:
         return await self.uow.users.delete(user_id)
