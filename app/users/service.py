@@ -1,6 +1,7 @@
 from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
+from app.database.schemas import PageParams, Page
 from app.database.types import ID
 from app.database.uow import UOW
 from app.service import Service
@@ -61,3 +62,6 @@ class UserService(Service):
 
     async def delete(self, user_id: ID) -> UserRead:
         return await self.uow.users.delete(user_id)
+
+    async def get_many(self, params: PageParams) -> Page[UserRead]:
+        return await self.uow.users.get_many(params)

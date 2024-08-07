@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
 )
 
+from app.permissions.repository import PermissionRepository
+from app.roles.repository import RoleRepository
 from app.users.repository import UserRepository
 
 
@@ -16,6 +18,8 @@ class UOW:
     session: AsyncSession
     transaction: AsyncSessionTransaction
 
+    permissions: PermissionRepository
+    roles: RoleRepository
     users: UserRepository
 
     def __init__(self, factory: async_sessionmaker[AsyncSession]):
@@ -28,6 +32,8 @@ class UOW:
         return cast(bool, self.session.is_active)
 
     async def on_open(self) -> None:
+        self.permissions = PermissionRepository(self.session)
+        self.roles = RoleRepository(self.session)
         self.users = UserRepository(self.session)
 
     async def open(self) -> None:

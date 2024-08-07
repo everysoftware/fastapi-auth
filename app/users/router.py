@@ -5,10 +5,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
 from app.config import settings
+from app.database.schemas import PageParams, Page
 from app.users.dependencies import (
     get_user_create,
     UserServiceDep,
     UserDep,
+    get_user,
 )
 from app.users.schemas import UserCreate, UserRead, UserUpdate
 
@@ -27,10 +29,10 @@ async def register(
 
 @auth_router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
 async def login(
-    users: UserServiceDep,
+    service: UserServiceDep,
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Response:
-    token_info = await users.login(form.username, form.password)
+    token_info = await service.login(form.username, form.password)
     if not token_info:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -66,17 +68,45 @@ user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @user_router.get("/me", status_code=status.HTTP_200_OK)
-async def me(user: UserDep) -> UserRead:
-    return user
+async def me(current_user: UserDep) -> UserRead:
+    return current_user
 
 
 @user_router.patch("/me", status_code=status.HTTP_200_OK)
 async def patch(
-    users: UserServiceDep, user: UserDep, update: UserUpdate
+    service: UserServiceDep, current_user: UserDep, update: UserUpdate
 ) -> UserRead:
-    return await users.update(user.id, update)
+    return await service.update(current_user.id, update)
 
 
 @user_router.delete("/me", status_code=status.HTTP_200_OK)
-async def delete(users: UserServiceDep, user: UserDep) -> UserRead:
-    return await users.delete(user.id)
+async def delete(service: UserServiceDep, current_user: UserDep) -> UserRead:
+    return await service.delete(current_user.id)
+
+
+@user_router.get("/{user_id}")
+def get_by_id(user: Annotated[UserRead, Depends(get_user)]) -> UserRead:
+    return user
+
+
+@user_router.patch("/{user_id}")
+async def update_by_id(
+    service: UserServiceDep,
+    user: Annotated[UserRead, Depends(get_user)],
+    update: UserUpdate,
+) -> UserRead:
+    return await service.update(user.id, update)
+
+
+@user_router.delete("/{user_id}")
+async def delete_by_id(
+    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user)]
+) -> UserRead:
+    return await service.delete(user.id)
+
+
+@user_router.get("/")
+async def get_many(
+    service: UserServiceDep, params: Annotated[PageParams, Depends()]
+) -> Page[UserRead]:
+    return await service.get_many(params)

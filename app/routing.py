@@ -2,11 +2,15 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
+from app.permissions.router import router as permission_router
+from app.roles.router import router as role_router
 from app.users.dependencies import get_current_user
 from app.users.router import auth_router, user_router
 
 protected_router = APIRouter(dependencies=[Depends(get_current_user)])
 protected_router.include_router(user_router)
+protected_router.include_router(permission_router)
+protected_router.include_router(role_router)
 
 main_router = APIRouter()
 main_router.include_router(auth_router)

@@ -22,10 +22,8 @@ mypy = "^1.10.0"
 ruff = "^0.4.3"
 pre-commit = "^3.7.0"
 pytest = "^8.2.0"
-pytest-asyncio = "^0.23.6"
-pytest-order = "^1.2.1"
 sqlalchemy-utils = "^0.41.2"
-psycopg2 = "^2.9.9"
+pytest-asyncio = "^0.23.8"
 
 
 [build-system]

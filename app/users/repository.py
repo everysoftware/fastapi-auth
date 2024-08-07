@@ -3,7 +3,9 @@ from typing import Any, cast
 from sqlalchemy import select
 
 from app.database import utils
+from app.database.pagination import apply_params, make_page
 from app.database.repository import AlchemyRepository
+from app.database.schemas import PageParams, Page
 from app.database.types import ID
 from app.database.utils import validate
 from app.users.models import UserOrm
@@ -38,3 +40,9 @@ class UserRepository(AlchemyRepository):
         await self.session.delete(user)
         await self.session.flush()
         return validate(user, UserRead)
+
+    async def get_many(self, params: PageParams) -> Page[UserRead]:
+        stmt = select(UserOrm)
+        stmt = apply_params(params, UserOrm, stmt)
+        result = await self.session.execute(stmt)
+        return make_page(result.scalars(), item_model=UserRead)

@@ -4,6 +4,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 from starlette import status
 
+from app.database.types import ID
 from app.dependencies import UOWDep
 from app.users.exceptions import InvalidToken
 from app.users.schemas import UserCreate, UserRead
@@ -72,3 +73,12 @@ async def get_current_user(
 
 
 UserDep = Annotated[UserRead, Depends(get_current_user)]
+
+
+async def get_user(users: UserServiceDep, current_user: UserDep, user_id: ID):
+    # 1. User role: admin, user
+    # 2. Permissions: tasks:read, tasks: update, tasks:delete...
+    user = await users.get(user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist")
+    return user
