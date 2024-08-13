@@ -5,12 +5,15 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
 from app.config import settings
+from app.db.schemas import PageParams, Page
 from app.users.dependencies import (
     get_user_create,
     UserServiceDep,
     UserDep,
+    get_user,
+    GetCurrentUser,
 )
-from app.users.schemas import UserCreate, UserRead, UserUpdate
+from app.users.schemas import UserCreate, UserRead, UserUpdate, AccessType
 
 router = APIRouter()
 
@@ -66,7 +69,7 @@ user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @user_router.get("/me", status_code=status.HTTP_200_OK)
-async def me(user: UserDep) -> UserRead:
+def me(user: UserDep) -> UserRead:
     return user
 
 
@@ -80,3 +83,48 @@ async def patch(
 @user_router.delete("/me", status_code=status.HTTP_200_OK)
 async def delete(users: UserServiceDep, user: UserDep) -> UserRead:
     return await users.delete(user.id)
+
+
+su_router = APIRouter(
+    tags=["Admin"], dependencies=[Depends(GetCurrentUser(is_superuser=True))]
+)
+
+
+@su_router.get("/{user_id}")
+def get_by_id(user: Annotated[UserRead, Depends(get_user)]) -> UserRead:
+    return user
+
+
+@su_router.patch("/{user_id}")
+async def update_by_id(
+    service: UserServiceDep,
+    user: Annotated[UserRead, Depends(get_user)],
+    update: UserUpdate,
+) -> UserRead:
+    return await service.update(user.id, update)
+
+
+@su_router.delete("/{user_id}")
+async def delete_by_id(
+    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user)]
+) -> UserRead:
+    return await service.delete(user.id)
+
+
+@su_router.get("/")
+async def get_many(
+    service: UserServiceDep, params: Annotated[PageParams, Depends()]
+) -> Page[UserRead]:
+    return await service.get_many(params)
+
+
+@su_router.post("/{user_id}/grant")
+async def grant(
+    service: UserServiceDep,
+    user: Annotated[UserRead, Depends(get_user)],
+    access_type: AccessType = AccessType.user,
+) -> UserRead:
+    return await service.grant(user.id, access_type)
+
+
+user_router.include_router(su_router)

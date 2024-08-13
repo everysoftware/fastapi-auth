@@ -5,7 +5,7 @@ from httpx import Cookies
 from starlette.testclient import TestClient
 
 from app import app
-from app.database.uow import UOW
+from app.db.uow import UOW
 from app.dependencies import get_uow
 from app.users.schemas import UserCreate, UserRead
 from tests.conftest import test_factory

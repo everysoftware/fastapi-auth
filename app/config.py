@@ -23,6 +23,9 @@ class AppSettings(BaseSettings):
 
     db_dsn: str
 
+    su_email: str = "admin@example.com"
+    su_password: str
+
     model_config = SettingsConfigDict(extra="allow", env_prefix="app_")
 
 

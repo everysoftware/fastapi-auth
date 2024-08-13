@@ -4,14 +4,15 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routing import main_router
 from app.config import settings
+from app.routing import main_router
+from app.users.lifespan import register_superuser
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup tasks
-    # ...
+    await register_superuser()
     yield
     # Shutdown tasks
     # ...

@@ -1,12 +1,21 @@
+from typing import assert_never
+
 from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
-from app.database.types import ID
-from app.database.uow import UOW
+from app.db.schemas import PageParams, Page
+from app.db.types import ID
+from app.db.uow import UOW
 from app.service import Service
 from app.users import jwt_helper
 from app.users.exceptions import InvalidToken
-from app.users.schemas import UserCreate, UserUpdate, UserRead, TokenInfo
+from app.users.schemas import (
+    UserCreate,
+    UserUpdate,
+    UserRead,
+    TokenInfo,
+    AccessType,
+)
 
 
 class UserService(Service):
@@ -61,3 +70,16 @@ class UserService(Service):
 
     async def delete(self, user_id: ID) -> UserRead:
         return await self.uow.users.delete(user_id)
+
+    async def get_many(self, params: PageParams) -> Page[UserRead]:
+        return await self.uow.users.get_many(params)
+
+    async def grant(self, user_id: ID, access_type: AccessType) -> UserRead:
+        match access_type:
+            case AccessType.user:
+                update_data = {"is_superuser": False}
+            case AccessType.superuser:
+                update_data = {"is_superuser": True}
+            case _:
+                assert_never(access_type)
+        return await self.uow.users.update(user_id, update_data)

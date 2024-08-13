@@ -1,14 +1,16 @@
-from pydantic import Field
+from enum import StrEnum, auto
 
-from app.database.schemas import UUIDModel, TimestampModel
+from pydantic import Field, EmailStr
+
+from app.db.schemas import IDModel, TimestampModel
 from app.schemas import Base
 
 
 class UserBase(Base):
-    email: str
+    email: EmailStr
 
 
-class UserRead(UserBase, UUIDModel, TimestampModel):
+class UserRead(UserBase, IDModel, TimestampModel):
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
@@ -20,9 +22,14 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(Base):
-    email: str | None = None
+    email: EmailStr | None = None
     password: str | None = None
 
 
 class TokenInfo(Base):
     access_token: str
+
+
+class AccessType(StrEnum):
+    user = auto()
+    superuser = auto()

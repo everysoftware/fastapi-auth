@@ -2,10 +2,10 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from app.users.dependencies import get_current_user
+from app.users.dependencies import GetCurrentUser
 from app.users.router import auth_router, user_router
 
-protected_router = APIRouter(dependencies=[Depends(get_current_user)])
+protected_router = APIRouter(dependencies=[Depends(GetCurrentUser())])
 protected_router.include_router(user_router)
 
 main_router = APIRouter()

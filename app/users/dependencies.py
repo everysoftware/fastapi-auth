@@ -4,6 +4,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 from starlette import status
 
+from app.db.types import ID
 from app.dependencies import UOWDep
 from app.users.exceptions import InvalidToken
 from app.users.schemas import UserCreate, UserRead
@@ -58,17 +59,40 @@ async def parse_headers(token: str = Depends(header_scheme)) -> str | None:
     return token
 
 
-async def get_current_user(
-    users: UserServiceDep,
-    cookie_token: str = Depends(parse_cookies),
-    header_token: str = Depends(parse_headers),
-) -> UserRead:
-    for token in cookie_token, header_token:
-        try:
-            return await users.validate(token)
-        except InvalidToken as e:
-            print(f"Invalid token: {e}")
-    raise_unauthorized()
+class GetCurrentUser:
+    is_superuser: bool
+
+    def __init__(self, is_superuser: bool = False):
+        self.is_superuser = is_superuser
+
+    async def __call__(
+        self,
+        users: UserServiceDep,
+        cookie_token: str = Depends(parse_cookies),
+        header_token: str = Depends(parse_headers),
+    ) -> UserRead:
+        user = None
+        for token in cookie_token, header_token:
+            try:
+                user = await users.validate(token)
+            except InvalidToken as e:
+                print(f"Invalid token error: {e}")
+        if user is None:
+            raise_unauthorized()
+        if self.is_superuser and not user.is_superuser:
+            if not user.is_superuser:
+                raise HTTPException(
+                    status.HTTP_403_FORBIDDEN, "Not enough rights"
+                )
+        return user
 
 
-UserDep = Annotated[UserRead, Depends(get_current_user)]
+UserDep = Annotated[UserRead, Depends(GetCurrentUser())]
+SuperuserDep = Annotated[UserRead, Depends(GetCurrentUser(is_superuser=True))]
+
+
+async def get_user(users: UserServiceDep, user_id: ID) -> UserRead:
+    user = await users.get(user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User does not exist")
+    return user
