@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, APIRouter
 
-from app.database.schemas import PageParams, Page
+from app.db.schemas import PageParams, Page
 from app.permissions.dependencies import get_permission, PermissionServiceDep
 from app.permissions.schemas import (
     PermissionRead,

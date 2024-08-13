@@ -1,11 +1,11 @@
 from sqlalchemy.orm import mapped_column, Mapped
 
-from app.database.base import BaseOrm
-from app.database.mixins import TimestampMixin, IDMixin
+from app.db.base import BaseOrm
+from app.db.mixins import TimestampMixin, IDMixin
 
 
 class RoleOrm(BaseOrm, IDMixin, TimestampMixin):
     __tablename__ = "roles"
 
-    name: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
+    name: Mapped[str] = mapped_column(unique=True, index=True)
     description: Mapped[str | None]

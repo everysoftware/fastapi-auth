@@ -1,5 +1,5 @@
-from app.database.schemas import Page, PageParams
-from app.database.types import ID
+from app.db.schemas import Page, PageParams
+from app.db.types import ID
 from app.permissions.schemas import (
     PermissionUpdate,
     PermissionRead,

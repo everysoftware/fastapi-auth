@@ -2,8 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, APIRouter
 
-from app.database.schemas import PageParams, Page
-from app.permissions.schemas import PermissionRead
+from app.db.schemas import PageParams, Page
 from app.roles.dependencies import RoleServiceDep, get_role
 from app.roles.schemas import RoleCreate, RoleRead, RoleUpdate
 
@@ -16,8 +15,10 @@ async def create(service: RoleServiceDep, creation: RoleCreate) -> RoleRead:
 
 
 @router.get("/{role_id}")
-def get(role: Annotated[RoleRead, Depends(get_role)]) -> RoleRead:
-    return role
+async def get(
+    service: RoleServiceDep, role: Annotated[RoleRead, Depends(get_role)]
+) -> RoleRead:
+    return await service.get(role.id, with_permissions=True)
 
 
 @router.patch("/{role_id}")
@@ -39,5 +40,5 @@ async def delete(
 @router.get("/")
 async def get_many(
     service: RoleServiceDep, params: Annotated[PageParams, Depends()]
-) -> Page[PermissionRead]:
+) -> Page[RoleRead]:
     return await service.get_many(params)

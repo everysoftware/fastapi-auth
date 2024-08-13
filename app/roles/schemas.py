@@ -1,4 +1,6 @@
-from app.database.schemas import UUIDModel, TimestampModel
+from app.db.schemas import IDModel, TimestampModel, Page
+from app.db.types import ID
+from app.permissions.schemas import PermissionRead
 from app.schemas import Base
 
 
@@ -7,13 +9,18 @@ class RoleBase(Base):
     description: str | None
 
 
-class RoleRead(RoleBase, UUIDModel, TimestampModel):
+class RoleRead(RoleBase, IDModel, TimestampModel):
+    permissions: Page[PermissionRead] | None = None
+
+
+class RoleAddPermissions(Base):
+    permissions: list[ID] | None = None
+
+
+class RoleCreate(RoleBase, RoleAddPermissions):
     pass
 
 
-class RoleCreate(RoleBase):
-    pass
-
-
-class RoleUpdate(Base):
-    name: str
+class RoleUpdate(RoleAddPermissions):
+    name: str | None = None
+    description: str | None = None

@@ -5,7 +5,7 @@ from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.database.connection import (
+from app.db.connection import (
     get_async_engine,
     get_async_session_factory,
 )

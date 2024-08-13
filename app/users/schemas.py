@@ -1,6 +1,6 @@
 from pydantic import Field
 
-from app.database.schemas import UUIDModel, TimestampModel
+from app.db.schemas import IDModel, TimestampModel
 from app.schemas import Base
 
 
@@ -8,7 +8,7 @@ class UserBase(Base):
     email: str
 
 
-class UserRead(UserBase, UUIDModel, TimestampModel):
+class UserRead(UserBase, IDModel, TimestampModel):
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool

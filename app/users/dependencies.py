@@ -4,7 +4,7 @@ from fastapi import HTTPException, Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 from starlette import status
 
-from app.database.types import ID
+from app.db.types import ID
 from app.dependencies import UOWDep
 from app.users.exceptions import InvalidToken
 from app.users.schemas import UserCreate, UserRead

@@ -5,7 +5,7 @@ from typing import Iterable, Any, TypeVar
 from sqlalchemy import Select
 from sqlalchemy.orm import DeclarativeBase
 
-from app.database.schemas import PageParams, Page
+from app.db.schemas import PageParams, Page
 from app.schemas import Base
 
 

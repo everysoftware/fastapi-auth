@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import HTTPException, Depends
 from starlette import status
 
-from app.database.types import ID
+from app.db.types import ID
 from app.dependencies import UOWDep
 from app.roles.service import RoleService
 

@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette import status
 
 from app.config import settings
-from app.database.schemas import PageParams, Page
+from app.db.schemas import PageParams, Page
 from app.users.dependencies import (
     get_user_create,
     UserServiceDep,

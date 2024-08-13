@@ -12,7 +12,7 @@ from sqlalchemy_utils.functions.database import (
 )
 from sqlalchemy_utils.functions.orm import quote
 
-from app.database import BaseOrm
+from app.db import BaseOrm
 
 
 # Next functions are copied from `sqlalchemy_utils` and slightly

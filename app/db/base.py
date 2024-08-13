@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import BigInteger, Enum as SAEnum, MetaData, Uuid
 from sqlalchemy.orm import DeclarativeBase
 
-from app.database import utils
+from app.db import utils
 
 type_map = {
     int: BigInteger,
@@ -33,3 +33,6 @@ class BaseOrm(DeclarativeBase):
 
     def update(self, data: BaseModel | dict[str, Any]) -> Self:
         return utils.update_attrs(self, data)
+
+    def __repr__(self) -> str:
+        return repr(self.dump())

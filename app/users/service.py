@@ -1,9 +1,9 @@
 from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
-from app.database.schemas import PageParams, Page
-from app.database.types import ID
-from app.database.uow import UOW
+from app.db.schemas import PageParams, Page
+from app.db.types import ID
+from app.db.uow import UOW
 from app.service import Service
 from app.users import jwt_helper
 from app.users.exceptions import InvalidToken

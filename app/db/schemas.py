@@ -10,7 +10,7 @@ from app.schemas import Base
 type OrderType = Literal["asc", "desc"]
 
 
-class UUIDModel(BaseModel):
+class IDModel(BaseModel):
     id: UUID4
 
 
