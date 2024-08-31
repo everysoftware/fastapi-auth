@@ -42,7 +42,7 @@ class TimestampMixin(Mixin):
     )
 
 
-class SoftRemovalMixin(Mixin):
+class SoftDeletableMixin(Mixin):
     deleted_at: Mapped[datetime.datetime | None] = mapped_column(
         sort_order=102
     )

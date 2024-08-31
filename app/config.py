@@ -12,17 +12,18 @@ class AppSettings(BaseSettings):
     env: Literal["dev", "prod", "test"] = "dev"
     debug: bool = False
 
-    jwt_private_key: Path = Path("certs") / "jwt-private.pem"
-    jwt_public_key: Path = Path("certs") / "jwt-public.pem"
-    jwt_algorithm: str = "RS256"
-    jwt_access_token_expire: int = 15
-
     cors_headers: list[str] = ["*"]
     cors_methods: list[str] = ["*"]
     cors_origins: list[str] = ["*"]
+    cors_origin_regex: str | None = None
 
     db_dsn: str
 
+    jwt_private_key: Path = Path("certs") / "jwt-private.pem"
+    jwt_public_key: Path = Path("certs") / "jwt-public.pem"
+    jwt_algorithm: str = "RS256"
+    jwt_access_expire_minutes: int = 30 * 24 * 60
+    jwt_refresh_expire_minutes: int = 15
     su_email: str = "admin@example.com"
     su_password: str
 

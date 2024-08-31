@@ -1,12 +1,17 @@
+import datetime
+import uuid
 from enum import StrEnum, auto
+from typing import Literal
 
-from pydantic import Field, EmailStr
+from pydantic import Field, EmailStr, ConfigDict, field_serializer
 
+from app.config import settings
 from app.db.schemas import IDModel, TimestampModel
-from app.schemas import Base
+from app.db.types import ID
+from app.schemas import BackendBase
 
 
-class UserBase(Base):
+class UserBase(BackendBase):
     email: EmailStr
 
 
@@ -21,15 +26,57 @@ class UserCreate(UserBase):
     password: str
 
 
-class UserUpdate(Base):
+class UserUpdate(BackendBase):
     email: EmailStr | None = None
     password: str | None = None
 
 
-class TokenInfo(Base):
+# AUTHORIZATION
+ACCESS_HEADER_NAME = "Authorization"
+REFRESH_HEADER_NAME = "Refresh-Token"
+ACCESS_COOKIE_NAME = "access_token"
+
+
+class TokenType(StrEnum):
+    access = auto()
+    refresh = auto()
+
+
+class TokenParams(BackendBase):
+    algorithm: str = settings.jwt_algorithm
+    private_key: str = settings.jwt_private_key.read_text()
+    public_key: str = settings.jwt_public_key.read_text()
+    type: TokenType
+    expires_in: datetime.timedelta
+
+
+class JWTPayload(BackendBase):
+    jti: str
+    typ: TokenType
+    sub: ID
+    iat: datetime.datetime
+    exp: datetime.datetime
+
+    @field_serializer("iat", "exp", mode="plain")
+    def datetime_to_timestamp(self, value: datetime.datetime) -> int:
+        return int(value.timestamp())
+
+    model_config = ConfigDict(extra="allow")
+
+
+class EncodeJWTResponse(BackendBase):
+    payload: JWTPayload
+    token: str
+
+
+class BearerToken(BackendBase):
+    token_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     access_token: str
+    refresh_token: str | None = None
+    token_type: Literal["bearer"] = "bearer"
+    expires_in: int
 
 
-class AccessType(StrEnum):
+class Role(StrEnum):
     user = auto()
     superuser = auto()
