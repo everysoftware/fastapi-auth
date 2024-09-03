@@ -6,10 +6,10 @@ A production-ready template for FastAPI projects ⚡
 
 Main features of this template:
 
-- Safe and secure **JWT Authentication** with RSA Encryption (access + refresh tokens)
+- Secure **authorization** with JWT+RSA+Refresh Tokens
 - Simple and extendable **RBAC** (supports user & superuser roles)
-- Powerful **user management** for superusers
-- Limit-offset **pagination** with sorting
+- Powerful **user management**
+- Offset **pagination** with sorting
 - Well-designed **architecture** & **file-structure** with SOLID & patterns applying
 - Fast **deployment** with Docker, Makefile, gunicorn & pre-commit
 - **Test framework** for faster test-writing with examples
