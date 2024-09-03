@@ -2,11 +2,8 @@ from enum import Enum
 from typing import Any, Self
 from uuid import UUID
 
-from pydantic import BaseModel
-from sqlalchemy import BigInteger, Enum as SAEnum, MetaData, Uuid
+from sqlalchemy import BigInteger, Enum as SAEnum, MetaData, Uuid, inspect
 from sqlalchemy.orm import DeclarativeBase
-
-from app.db import utils
 
 type_map = {
     int: BigInteger,
@@ -29,10 +26,15 @@ class BaseOrm(DeclarativeBase):
     metadata = metadata
 
     def dump(self) -> dict[str, Any]:
-        return utils.dump(self)
+        return {
+            c.key: getattr(self, c.key)
+            for c in inspect(self).mapper.column_attrs  # noqa
+        }
 
-    def update(self, data: BaseModel | dict[str, Any]) -> Self:
-        return utils.update_attrs(self, data)
+    def update(self, **data: Any) -> Self:
+        for name, value in data.items():
+            setattr(self, name, value)
+        return self
 
     def __repr__(self) -> str:
         return repr(self.dump())

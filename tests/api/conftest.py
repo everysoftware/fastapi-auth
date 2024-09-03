@@ -1,13 +1,12 @@
 from typing import AsyncGenerator
 
 import pytest
-from httpx import Cookies
 from starlette.testclient import TestClient
 
 from app import app
 from app.db.uow import UOW
 from app.dependencies import get_uow
-from app.users.schemas import UserCreate, UserRead
+from app.users.schemas import UserCreate, UserRead, BearerToken
 from tests.conftest import test_factory
 
 
@@ -47,17 +46,21 @@ def existing_user(client: TestClient) -> UserRead:
 
 
 @pytest.fixture
-def user_cookies(client: TestClient, existing_user: UserRead) -> Cookies:
+def user_headers(
+    client: TestClient, existing_user: UserRead
+) -> dict[str, str]:
     response = client.post(
-        "/auth/login",
+        "/auth/token",
         headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={"username": user_create.email, "password": user_create.password},
+        data={
+            "grant_type": "password",
+            "username": user_create.email,
+            "password": user_create.password,
+        },
     )
-    assert response.status_code == 204
-    assert "access_token" in response.cookies
-    return response.cookies
+    assert response.status_code == 200
 
+    json = response.json()
+    token = BearerToken.model_validate(json)
 
-@pytest.fixture
-def user_headers(user_cookies: Cookies) -> dict[str, str]:
-    return {"Authentication": f"Bearer {user_cookies["access_token"]}"}
+    return {"Authorization": f"Bearer {token.access_token}"}

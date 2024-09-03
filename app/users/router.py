@@ -1,19 +1,23 @@
-from typing import Annotated
+from typing import Annotated, assert_never
 
-from fastapi import Depends, APIRouter, HTTPException, Response
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import Depends, APIRouter
 from starlette import status
 
-from app.config import settings
 from app.db.schemas import PageParams, Page
 from app.users.dependencies import (
-    get_user_create,
     UserServiceDep,
     UserDep,
     get_user,
     GetCurrentUser,
 )
-from app.users.schemas import UserCreate, UserRead, UserUpdate, AccessType
+from app.users.oauth2 import AuthorizationForm
+from app.users.schemas import (
+    UserCreate,
+    UserRead,
+    UserUpdate,
+    BearerToken,
+    Role,
+)
 
 router = APIRouter()
 
@@ -22,47 +26,25 @@ auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @auth_router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
-    auth: UserServiceDep,
-    user: Annotated[UserCreate, Depends(get_user_create)],
+    users: UserServiceDep,
+    user: UserCreate,
 ) -> UserRead:
-    return await auth.register(user)
+    return await users.register(user)
 
 
-@auth_router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
+@auth_router.post("/token", status_code=status.HTTP_200_OK)
 async def login(
     users: UserServiceDep,
-    form: Annotated[OAuth2PasswordRequestForm, Depends()],
-) -> Response:
-    token_info = await users.login(form.username, form.password)
-    if not token_info:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-        )
-    response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    response.set_cookie(
-        key="access_token",
-        value=token_info.access_token,
-        httponly=True,
-        secure=True,
-        max_age=settings.jwt_access_token_expire * 60,
-    )
-    return response
-
-
-@auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout() -> Response:
-    response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    # Not always works
-    # response.delete_cookie(key="access_token")
-    response.set_cookie(
-        key="access_token",
-        value="",
-        httponly=True,
-        secure=True,
-        max_age=0,
-    )
-    return response
+    form: Annotated[AuthorizationForm, Depends()],
+) -> BearerToken:
+    match form.grant_type:
+        case "password":
+            token = await users.authorize(form.username, form.password)
+        case "refresh_token":
+            token = await users.refresh_token(form.refresh_token)
+        case _:
+            assert_never(form.grant_type)
+    return token
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
@@ -122,9 +104,9 @@ async def get_many(
 async def grant(
     service: UserServiceDep,
     user: Annotated[UserRead, Depends(get_user)],
-    access_type: AccessType = AccessType.user,
+    role: Role = Role.user,
 ) -> UserRead:
-    return await service.grant(user.id, access_type)
+    return await service.grant(user.id, role)
 
 
 user_router.include_router(su_router)

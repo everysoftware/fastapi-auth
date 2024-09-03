@@ -3,27 +3,23 @@ from __future__ import annotations
 import datetime
 from typing import Literal, cast
 
-from pydantic import Field, computed_field, BaseModel, UUID4
+from pydantic import Field, computed_field, UUID4
 
-from app.schemas import Base
+from app.schemas import BackendBase
 
 type OrderType = Literal["asc", "desc"]
 
 
-class IDModel(BaseModel):
+class IDModel(BackendBase):
     id: UUID4
 
 
-class TimestampModel(BaseModel):
+class TimestampModel(BackendBase):
     created_at: datetime.datetime
     updated_at: datetime.datetime
 
 
-class SoftRemovalModel(BaseModel):
-    deleted_at: datetime.datetime
-
-
-class SortParam(Base):
+class SortParam(BackendBase):
     field: str
     order: OrderType = "asc"
 
@@ -37,8 +33,8 @@ class SortParam(Base):
         raise ValueError(f"Invalid sort param: {value}")
 
 
-class PageParams(Base):
-    limit: int = Field(10, ge=0, le=100)
+class PageParams(BackendBase):
+    limit: int = Field(10, ge=0, le=1000)
     offset: int = Field(0, ge=0)
     sort: str = "updated_at:desc"
 
@@ -49,8 +45,8 @@ class PageParams(Base):
         return [SortParam.from_str(i) for i in sort]
 
 
-class Page[ItemModel: Base](Base):
-    items: list[ItemModel]
+class Page[IT: BackendBase](BackendBase):
+    items: list[IT]
 
     @computed_field  # type: ignore
     @property

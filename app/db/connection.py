@@ -21,5 +21,5 @@ def get_async_session_factory(
     return async_sessionmaker(engine, expire_on_commit=False, **kwargs)
 
 
-async_engine = get_async_engine(settings.db_dsn)
+async_engine = get_async_engine(settings.db.db_dsn)
 async_session_factory = get_async_session_factory(async_engine)

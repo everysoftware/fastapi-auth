@@ -12,7 +12,7 @@ from app.db.connection import (
 from tests.utils.alembic import alembic_upgrade_head, alembic_config_from_url
 from tests.utils.db import get_test_db_url, temporary_db, delete_all
 
-test_db_url = get_test_db_url(settings.db_dsn)
+test_db_url = get_test_db_url(settings.db.db_dsn)
 test_engine = get_async_engine(test_db_url, poolclass=pool.NullPool)
 test_factory = get_async_session_factory(test_engine)
 alembic_config = alembic_config_from_url(test_db_url)
