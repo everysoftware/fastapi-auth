@@ -1,4 +1,3 @@
-import datetime
 import uuid
 from typing import assert_never
 
@@ -29,7 +28,6 @@ from app.users.tokens import (
     access_params,
     refresh_params,
     encode_jwt,
-    JWTArgs,
 )
 
 
@@ -49,25 +47,18 @@ class UserService(Service):
         user: UserRead,
     ) -> BearerToken:
         """Issue bearer token for user."""
-        now = datetime.datetime.now(datetime.UTC)
-        args = JWTArgs(
-            token_id=str(uuid.uuid4()),
-            subject=str(user.id),
-            issued_at=now,
-            expires_at=now + refresh_params.expires_in,
+        access_token = encode_jwt(
+            access_params, subject=str(user.id), email=user.email
         )
-        access_response = encode_jwt(access_params, **args)
-        refresh_response = encode_jwt(refresh_params, **args)
+        refresh_token = encode_jwt(refresh_params, subject=str(user.id))
         return BearerToken(
-            token_id=args["token_id"],
-            access_token=access_response.token,
-            refresh_token=refresh_response.token,
+            token_id=str(uuid.uuid4()),
+            access_token=access_token,
+            refresh_token=refresh_token,
             expires_in=int(refresh_params.expires_in.total_seconds()),
         )
 
-    async def authorize_by_password(
-        self, email: str, password: str
-    ) -> BearerToken:
+    async def authorize(self, email: str, password: str) -> BearerToken:
         """
         Authorize user by email and password. Return bearer token that can be
         used to authenticate user in future requests.
@@ -92,19 +83,17 @@ class UserService(Service):
         try:
             payload = decode_jwt(params, token)
         except InvalidTokenError as e:
-            raise InvalidToken(message=str(e)) from e
+            raise InvalidToken() from e
         if payload.typ != token_type:
             raise InvalidTokenType()
-        user = await self.uow.users.get(payload.sub)
+        user = await self.uow.users.get(uuid.UUID(payload.sub, version=4))
         if user is None:
             raise UserNotFound()
         return user
 
-    async def authorize_by_refresh_token(
-        self, refresh_token: str
-    ) -> BearerToken:
+    async def refresh_token(self, rt: str) -> BearerToken:
         """Refresh bearer token using refresh token."""
-        user = await self.validate_token(refresh_token, TokenType.refresh)
+        user = await self.validate_token(rt, TokenType.refresh)
         return self.issue_token(user)
 
     async def get(self, user_id: ID) -> UserRead | None:

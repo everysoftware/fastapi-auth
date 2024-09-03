@@ -9,12 +9,6 @@ class UserAlreadyExists(BackendError):
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class InvalidGrantType(BackendError):
-    message = "Invalid grant type"
-    error_code = "invalid_grant_type"
-    status_code = status.HTTP_400_BAD_REQUEST
-
-
 class Unauthorized(BackendError):
     status_code = status.HTTP_401_UNAUTHORIZED
     headers = {"WWW-Authenticate": "Bearer"}

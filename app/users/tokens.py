@@ -1,59 +1,59 @@
 import datetime
-from typing import TypedDict, Unpack
 
 import jwt
 
 from app.config import settings
-from app.db.types import ID
 from app.users.schemas import (
     TokenType,
     TokenParams,
-    JWTPayload,
-    EncodeJWTResponse,
+    JWTClaims,
 )
 
 access_params = TokenParams(
     type=TokenType.access,
-    expires_in=datetime.timedelta(minutes=settings.jwt_access_expire_minutes),
+    expires_in=datetime.timedelta(
+        minutes=settings.auth.jwt_access_expire_minutes
+    ),
 )
 refresh_params = TokenParams(
     type=TokenType.refresh,
-    expires_in=datetime.timedelta(minutes=settings.jwt_refresh_expire_minutes),
+    expires_in=datetime.timedelta(
+        minutes=settings.auth.jwt_refresh_expire_minutes
+    ),
 )
-
-
-class JWTArgs(TypedDict):
-    token_id: str
-    subject: ID
-    issued_at: datetime.datetime
-    expires_at: datetime.datetime
 
 
 def encode_jwt(
     params: TokenParams,
-    **kwargs: Unpack[JWTArgs],
-) -> EncodeJWTResponse:
-    payload = JWTPayload(
-        jti=kwargs["token_id"],
+    *,
+    subject: str,
+    email: str | None = None,
+) -> str:
+    now = datetime.datetime.now(datetime.UTC)
+    payload = JWTClaims(
+        iss=params.issuer,
+        aud=params.audience,
         typ=params.type,
-        sub=kwargs["subject"],
-        iat=kwargs["issued_at"],
-        exp=kwargs["expires_at"],
+        sub=subject,
+        iat=now,
+        nbf=now,
+        exp=now + params.expires_in,
+        email=email,
     )
     encoded = jwt.encode(
-        payload.model_dump(mode="json"),
+        payload.model_dump(mode="json", exclude_none=True),
         params.private_key,
         algorithm=params.algorithm,
     )
-    return EncodeJWTResponse(
-        payload=JWTPayload.model_validate(payload), token=encoded
-    )
+    return encoded
 
 
-def decode_jwt(params: TokenParams, token: str) -> JWTPayload:
+def decode_jwt(params: TokenParams, token: str) -> JWTClaims:
     decoded = jwt.decode(
         token,
         params.public_key,
         algorithms=[params.algorithm],
+        issuer=params.issuer,
+        audience=params.audience,
     )
-    return JWTPayload.model_validate(decoded)
+    return JWTClaims.model_validate(decoded)

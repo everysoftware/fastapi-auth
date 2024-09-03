@@ -6,7 +6,7 @@ from app.db.types import ID
 from app.dependencies import UOWDep
 from app.logging import logger
 from app.users.exceptions import SuperuserRightsRequired, UserNotFound
-from app.users.oauth2 import CustomOAuth2PasswordBearer
+from app.users.oauth2 import OAuth2PasswordBearer
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
@@ -19,7 +19,7 @@ def get_user_service(
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
-oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 
 class GetCurrentUser:

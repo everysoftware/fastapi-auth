@@ -7,7 +7,6 @@ from pydantic import Field, EmailStr, ConfigDict, field_serializer
 
 from app.config import settings
 from app.db.schemas import IDModel, TimestampModel
-from app.db.types import ID
 from app.schemas import BackendBase
 
 
@@ -32,9 +31,6 @@ class UserUpdate(BackendBase):
 
 
 # AUTHORIZATION
-ACCESS_HEADER_NAME = "Authorization"
-REFRESH_HEADER_NAME = "Refresh-Token"
-ACCESS_COOKIE_NAME = "access_token"
 
 
 class TokenType(StrEnum):
@@ -42,39 +38,47 @@ class TokenType(StrEnum):
     refresh = auto()
 
 
+class GrantType(StrEnum):
+    password = auto()
+    refresh_token = auto()
+
+
 class TokenParams(BackendBase):
-    algorithm: str = settings.jwt_algorithm
-    private_key: str = settings.jwt_private_key.read_text()
-    public_key: str = settings.jwt_public_key.read_text()
+    issuer: str = settings.auth.jwt_issuer
+    audience: list[str] = settings.auth.jwt_audience
+    algorithm: str = settings.auth.jwt_algorithm
+    private_key: str = settings.auth.jwt_private_key.read_text()
+    public_key: str = settings.auth.jwt_public_key.read_text()
     type: TokenType
     expires_in: datetime.timedelta
 
 
-class JWTPayload(BackendBase):
-    jti: str
+class JWTClaims(BackendBase):
+    jti: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    iss: str
+    aud: list[str]
     typ: TokenType
-    sub: ID
+    sub: str
+    email: EmailStr | None = None
     iat: datetime.datetime
+    nbf: datetime.datetime
     exp: datetime.datetime
 
-    @field_serializer("iat", "exp", mode="plain")
+    @field_serializer("iat", "exp", "nbf", mode="plain")
     def datetime_to_timestamp(self, value: datetime.datetime) -> int:
         return int(value.timestamp())
 
     model_config = ConfigDict(extra="allow")
 
 
-class EncodeJWTResponse(BackendBase):
-    payload: JWTPayload
-    token: str
-
-
 class BearerToken(BackendBase):
     token_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     access_token: str
-    refresh_token: str | None = None
+    refresh_token: str
     token_type: Literal["bearer"] = "bearer"
-    expires_in: int
+    expires_in: int = Field(
+        description="Refresh token expiration time in seconds",
+    )
 
 
 class Role(StrEnum):

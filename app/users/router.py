@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, assert_never
 
 from fastapi import Depends, APIRouter
 from starlette import status
@@ -10,8 +10,7 @@ from app.users.dependencies import (
     get_user,
     GetCurrentUser,
 )
-from app.users.exceptions import InvalidGrantType
-from app.users.oauth2 import CustomOAuth2PasswordRequestForm
+from app.users.oauth2 import AuthorizationForm
 from app.users.schemas import (
     UserCreate,
     UserRead,
@@ -27,29 +26,24 @@ auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @auth_router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
-    auth: UserServiceDep,
+    users: UserServiceDep,
     user: UserCreate,
 ) -> UserRead:
-    return await auth.register(user)
+    return await users.register(user)
 
 
 @auth_router.post("/token", status_code=status.HTTP_200_OK)
 async def login(
     users: UserServiceDep,
-    form: Annotated[CustomOAuth2PasswordRequestForm, Depends()],
+    form: Annotated[AuthorizationForm, Depends()],
 ) -> BearerToken:
     match form.grant_type:
         case "password":
-            assert form.username is not None
-            assert form.password is not None
-            token = await users.authorize_by_password(
-                form.username, form.password
-            )
+            token = await users.authorize(form.username, form.password)
         case "refresh_token":
-            assert form.refresh_token is not None
-            token = await users.authorize_by_refresh_token(form.refresh_token)
+            token = await users.refresh_token(form.refresh_token)
         case _:
-            raise InvalidGrantType()
+            assert_never(form.grant_type)
     return token
 
 

@@ -11,11 +11,12 @@ async def register_default_users() -> None:
         users = UserService(uow)
 
         # superuser
-        user = await users.get_by_email(settings.su_email)
+        user = await users.get_by_email(settings.auth.su_email)
         if not user:
             user = await users.register(
                 UserCreate(
-                    email=settings.su_email, password=settings.su_password
+                    email=settings.auth.su_email,
+                    password=settings.auth.su_password,
                 )
             )
             await users.grant(user.id, Role.superuser)

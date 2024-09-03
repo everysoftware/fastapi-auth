@@ -39,8 +39,8 @@ def backend_exception_handler(
     return JSONResponse(
         status_code=ex.status_code,
         content=BackendErrorResponse(
-            message=ex.message,
-            error_code=ex.error_code,
+            msg=ex.message,
+            code=ex.error_code,
         ).model_dump(mode="json"),
         headers=ex.headers,
     )
@@ -56,19 +56,19 @@ def unhandled_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=BackendErrorResponse(
-            message="Internal Server Error",
-            error_code="unhandled_error",
+            msg="Internal Server Error",
+            code="unexpected_error",
         ).model_dump(mode="json"),
     )
 
 
 app.add_middleware(
     CORSMiddleware,  # noqa
-    allow_origins=settings.cors_origins,
-    allow_origin_regex=settings.cors_origin_regex,
+    allow_origins=settings.cors.cors_origins,
+    allow_origin_regex=settings.cors.cors_origin_regex,
     allow_credentials=True,
-    allow_methods=settings.cors_methods,
-    allow_headers=settings.cors_headers,
+    allow_methods=settings.cors.cors_methods,
+    allow_headers=settings.cors.cors_headers,
 )
 
 app.include_router(main_router)

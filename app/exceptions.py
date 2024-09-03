@@ -1,3 +1,4 @@
+from fastapi.exceptions import RequestValidationError
 from starlette import status
 
 
@@ -30,3 +31,7 @@ class BackendError(Exception):
     def __repr__(self) -> str:
         class_name = self.__class__.__name__
         return f'{class_name}(message="{self.message}", error_code={self.error_code}, status_code={self.status_code})'
+
+
+class ValidationError(RequestValidationError):
+    pass

@@ -7,5 +7,5 @@ class BackendBase(BaseModel):
 
 
 class BackendErrorResponse(BackendBase):
-    message: str
-    error_code: str
+    msg: str
+    code: str
