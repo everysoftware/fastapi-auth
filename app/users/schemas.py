@@ -41,6 +41,7 @@ class TokenType(StrEnum):
 class GrantType(StrEnum):
     password = auto()
     refresh_token = auto()
+    authorization_code = auto()
 
 
 class TokenParams(BackendBase):
@@ -79,6 +80,15 @@ class BearerToken(BackendBase):
     expires_in: int = Field(
         description="Refresh token expiration time in seconds",
     )
+
+
+class OIDCAuthorizeResponse(BackendBase):
+    url: str
+
+
+class OIDCProviderName(StrEnum):
+    google = auto()
+    yandex = auto()
 
 
 class Role(StrEnum):

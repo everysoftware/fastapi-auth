@@ -6,20 +6,22 @@ from app.db.types import ID
 from app.dependencies import UOWDep
 from app.logging import logger
 from app.users.exceptions import SuperuserRightsRequired, UserNotFound
-from app.users.oauth2 import OAuth2PasswordBearer
+from app.users.auth import PasswordBearerAuth
+from app.users.oidc import OIDC, get_oidc
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
 
 def get_user_service(
     uow: UOWDep,
+    oidc: Annotated[OIDC, Depends(get_oidc)],
 ) -> UserService:
-    return UserService(uow)
+    return UserService(uow, oidc=oidc)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = PasswordBearerAuth(tokenUrl="auth/token")
 
 
 class GetCurrentUser:

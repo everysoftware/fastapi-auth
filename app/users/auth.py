@@ -11,7 +11,7 @@ from starlette.requests import Request
 from app.exceptions import ValidationError
 from app.users.constants import TOKEN_HEADER_NAME, TOKEN_COOKIE_NAME
 from app.users.exceptions import NoTokenProvided
-from app.users.schemas import GrantType
+from app.users.schemas import GrantType, OIDCProviderName
 
 
 class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
@@ -20,29 +20,36 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
         *,
         grant_type: Annotated[
             GrantType,
-            Form(pattern="password|refresh_token"),
+            Form(pattern="password|refresh_token|authorization_code"),
         ],
+        # Password
         username: Annotated[
-            str | None, Form(examples=["user@example.com"])
-        ] = None,
-        password: Annotated[str | None, Form(examples=["password"])] = None,
-        refresh_token: Annotated[str | None, Form()] = None,
-        scope: Annotated[
-            str,
-            Form(),
-        ] = "",
-        client_id: Annotated[
             str | None,
-            Form(),
+            Form(
+                examples=["user@example.com"],
+                title="Used in password grant type",
+            ),
         ] = None,
-        client_secret: Annotated[
+        password: Annotated[
             str | None,
-            Form(),
+            Form(examples=["password"], title="Used in password grant type"),
+        ] = None,
+        # Refresh token
+        refresh_token: Annotated[
+            str | None, Form(title="Used in refresh token grant type")
+        ] = None,
+        # Authorization code
+        provider: Annotated[
+            OIDCProviderName | None,
+            Form(title="Used in authorization code grant type"),
+        ] = None,
+        code: Annotated[
+            str | None, Form(title="Used in authorization code grant type")
         ] = None,
     ):
         match grant_type:
-            case "password":
-                if username is None or password is None:
+            case GrantType.password:
+                if not username or not password:
                     raise ValidationError(
                         [
                             {
@@ -51,8 +58,8 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
                             }
                         ]
                     )
-            case "refresh_token":
-                if refresh_token is None:
+            case GrantType.refresh_token:
+                if not refresh_token:
                     raise ValidationError(
                         [
                             {
@@ -61,18 +68,30 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
                             }
                         ]
                     )
+            case GrantType.authorization_code:
+                if not code or not provider:
+                    raise ValidationError(
+                        [
+                            {
+                                "loc": "form",
+                                "msg": "Code, redirect URI and provider are required",
+                            }
+                        ]
+                    )
             case _:
                 assert_never(grant_type)
 
         self.refresh_token = refresh_token
+        self.code = code
+        self.provider = provider
 
         super().__init__(
             grant_type=grant_type,
             username=username,
             password=password,
-            scope=scope,
-            client_id=client_id,
-            client_secret=client_secret,
+            scope="",
+            client_id="",
+            client_secret="",
         )
 
 
@@ -88,7 +107,7 @@ def get_from_headers(request: Request) -> str | None:
     return param
 
 
-class OAuth2PasswordBearer(FastAPIOAuth2PasswordBearer):
+class PasswordBearerAuth(FastAPIOAuth2PasswordBearer):
     parsers = [get_from_cookies, get_from_headers]
 
     async def __call__(self, request: Request) -> str | None:

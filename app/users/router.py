@@ -1,16 +1,16 @@
-from typing import Annotated, assert_never
+from typing import Annotated
 
 from fastapi import Depends, APIRouter
 from starlette import status
 
 from app.db.schemas import PageParams, Page
+from app.users.auth import AuthorizationForm
 from app.users.dependencies import (
     UserServiceDep,
     UserDep,
     get_user,
     GetCurrentUser,
 )
-from app.users.oauth2 import AuthorizationForm
 from app.users.schemas import (
     UserCreate,
     UserRead,
@@ -37,14 +37,36 @@ async def login(
     users: UserServiceDep,
     form: Annotated[AuthorizationForm, Depends()],
 ) -> BearerToken:
-    match form.grant_type:
-        case "password":
-            token = await users.authorize(form.username, form.password)
-        case "refresh_token":
-            token = await users.refresh_token(form.refresh_token)
-        case _:
-            assert_never(form.grant_type)
-    return token
+    return await users.authorize(form)
+
+
+#
+# if google_sso:
+#
+#     @auth_router.get("/google/login")
+#     async def google_login():
+#         with google_sso:
+#             return await google_sso.get_login_redirect()
+#
+#     @auth_router.get("/google/callback")
+#     async def google_callback(request: Request):
+#         with google_sso:
+#             user = await google_sso.verify_and_process(request)
+#         return user
+#
+#
+# if yandex_sso:
+#
+#     @auth_router.get("/yandex/login")
+#     async def yandex_login():
+#         with yandex_sso:
+#             return await yandex_sso.get_login_redirect()
+#
+#     @auth_router.get("/yandex/callback")
+#     async def yandex_callback(request: Request):
+#         with yandex_sso:
+#             user = await yandex_sso.verify_and_process(request)
+#         return user
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
