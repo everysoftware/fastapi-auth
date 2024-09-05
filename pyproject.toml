@@ -16,7 +16,7 @@ asyncpg = "^0.29.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 pyjwt = {extras = ["crypto"], version = "^2.9.0"}
 loguru = "^0.7.2"
-fastapi-sso = "^0.15.0"
+oauthlib = "^3.2.2"
 
 
 [tool.poetry.group.dev.dependencies]

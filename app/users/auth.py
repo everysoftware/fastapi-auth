@@ -11,7 +11,7 @@ from starlette.requests import Request
 from app.exceptions import ValidationError
 from app.users.constants import TOKEN_HEADER_NAME, TOKEN_COOKIE_NAME
 from app.users.exceptions import NoTokenProvided
-from app.users.schemas import GrantType, OIDCProviderName
+from app.users.schemas import GrantType
 
 
 class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
@@ -38,14 +38,6 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
         refresh_token: Annotated[
             str | None, Form(title="Used in refresh token grant type")
         ] = None,
-        # Authorization code
-        provider: Annotated[
-            OIDCProviderName | None,
-            Form(title="Used in authorization code grant type"),
-        ] = None,
-        code: Annotated[
-            str | None, Form(title="Used in authorization code grant type")
-        ] = None,
     ):
         match grant_type:
             case GrantType.password:
@@ -68,22 +60,10 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
                             }
                         ]
                     )
-            case GrantType.authorization_code:
-                if not code or not provider:
-                    raise ValidationError(
-                        [
-                            {
-                                "loc": "form",
-                                "msg": "Code, redirect URI and provider are required",
-                            }
-                        ]
-                    )
             case _:
                 assert_never(grant_type)
 
         self.refresh_token = refresh_token
-        self.code = code
-        self.provider = provider
 
         super().__init__(
             grant_type=grant_type,

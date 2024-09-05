@@ -5,8 +5,10 @@ from jwt import InvalidTokenError
 
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
-from app.db.uow import UOW
+from app.logging import logger
 from app.service import Service
+from app.sso.base import SSOProvider
+from app.sso.schemas import SSOCallback
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -17,7 +19,6 @@ from app.users.exceptions import (
     UserNotFound,
 )
 from app.users.hashing import pwd_context
-from app.users.oidc import OIDC
 from app.users.schemas import (
     UserCreate,
     UserUpdate,
@@ -26,8 +27,6 @@ from app.users.schemas import (
     BearerToken,
     TokenType,
     GrantType,
-    OIDCProviderName,
-    OIDCAuthorizeResponse,
 )
 from app.users.tokens import (
     decode_jwt,
@@ -38,12 +37,6 @@ from app.users.tokens import (
 
 
 class UserService(Service):
-    oidc: OIDC
-
-    def __init__(self, uow: UOW, *, oidc: OIDC):
-        super().__init__(uow)
-        self.oidc = oidc
-
     async def register(
         self,
         data: UserCreate,
@@ -99,7 +92,7 @@ class UserService(Service):
             expires_in=int(refresh_params.expires_in.total_seconds()),
         )
 
-    async def process_password_grant(
+    async def login(
         self,
         form: AuthorizationForm,
     ) -> UserRead:
@@ -129,27 +122,23 @@ class UserService(Service):
             raise UserNotFound()
         return user
 
-    async def process_refresh_token_grant(
-        self, form: AuthorizationForm
-    ) -> UserRead:
+    async def validate_rt(self, form: AuthorizationForm) -> UserRead:
         return await self.validate_token(form.refresh_token, TokenType.refresh)
 
-    async def get_oidc_authorization_url(
-        self, provider: OIDCProviderName
-    ) -> OIDCAuthorizeResponse:
-        oidc_provider = self.oidc.get_provider(provider)
-        login_url = await oidc_provider.get_login_url()
-        return OIDCAuthorizeResponse(url=login_url)
+    @staticmethod
+    async def sso_login(
+        provider: SSOProvider, redirect_uri: str | None = None
+    ) -> str:
+        return await provider.get_login_url(redirect_uri=redirect_uri)
 
-    async def process_authorization_code_grant(
-        self, form: AuthorizationForm
-    ) -> UserRead:
-        oidc_provider = self.oidc.get_provider(form.provider)
-        open_id = await oidc_provider.verify_and_process(...)
+    async def sso_callback(
+        self, provider: SSOProvider, callback: SSOCallback
+    ) -> BearerToken:
+        open_id = await provider.verify_and_process(callback)
+        assert open_id and open_id.email
+        logger.info(open_id.model_dump())
 
-        assert open_id.email
         user = await self.get_by_email(open_id.email)
-
         if user:
             # TODO: Associate user with oauth account if not already
             # Else Update user's oauth account with new access token
@@ -161,16 +150,14 @@ class UserService(Service):
             )
             # TODO: Associate user with oauth account
 
-        return user
+        return self.create_token(user)
 
     async def authorize(self, form: AuthorizationForm) -> BearerToken:
         match form.grant_type:
             case GrantType.password:
-                user = await self.process_password_grant(form)
+                user = await self.login(form)
             case GrantType.refresh_token:
-                user = await self.process_refresh_token_grant(form)
-            case GrantType.authorization_code:
-                user = await self.process_authorization_code_grant(form)
+                user = await self.validate_rt(form)
             case _:
                 assert_never(form.grant_type)
         return self.create_token(user)

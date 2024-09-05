@@ -5,18 +5,16 @@ from fastapi import Depends
 from app.db.types import ID
 from app.dependencies import UOWDep
 from app.logging import logger
-from app.users.exceptions import SuperuserRightsRequired, UserNotFound
 from app.users.auth import PasswordBearerAuth
-from app.users.oidc import OIDC, get_oidc
+from app.users.exceptions import SuperuserRightsRequired, UserNotFound
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
 
 def get_user_service(
     uow: UOWDep,
-    oidc: Annotated[OIDC, Depends(get_oidc)],
 ) -> UserService:
-    return UserService(uow, oidc=oidc)
+    return UserService(uow)
 
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
