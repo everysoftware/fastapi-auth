@@ -5,10 +5,7 @@ from jwt import InvalidTokenError
 
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
-from app.logging import logger
 from app.service import Service
-from app.sso.base import SSOProvider
-from app.sso.schemas import SSOCallback
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -123,34 +120,8 @@ class UserService(Service):
         return user
 
     async def validate_rt(self, form: AuthorizationForm) -> UserRead:
+        assert form.refresh_token is not None
         return await self.validate_token(form.refresh_token, TokenType.refresh)
-
-    @staticmethod
-    async def sso_login(
-        provider: SSOProvider, redirect_uri: str | None = None
-    ) -> str:
-        return await provider.get_login_url(redirect_uri=redirect_uri)
-
-    async def sso_callback(
-        self, provider: SSOProvider, callback: SSOCallback
-    ) -> BearerToken:
-        open_id = await provider.verify_and_process(callback)
-        assert open_id and open_id.email
-        logger.info(open_id.model_dump())
-
-        user = await self.get_by_email(open_id.email)
-        if user:
-            # TODO: Associate user with oauth account if not already
-            # Else Update user's oauth account with new access token
-            pass
-        else:
-            user = await self.register(
-                UserCreate(email=open_id.email, password=uuid.uuid4().hex),
-                is_verified=True,
-            )
-            # TODO: Associate user with oauth account
-
-        return self.create_token(user)
 
     async def authorize(self, form: AuthorizationForm) -> BearerToken:
         match form.grant_type:

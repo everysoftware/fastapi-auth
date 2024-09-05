@@ -15,6 +15,8 @@ from app.users.schemas import GrantType
 
 
 class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
+    grant_type: GrantType
+
     def __init__(
         self,
         *,
@@ -67,8 +69,8 @@ class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
 
         super().__init__(
             grant_type=grant_type,
-            username=username,
-            password=password,
+            username=username,  # type: ignore[arg-type]
+            password=password,  # type: ignore[arg-type]
             scope="",
             client_id="",
             client_secret="",

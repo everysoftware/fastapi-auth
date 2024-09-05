@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from starlette import status
 
 from app.schemas import BackendErrorResponse
+from app.sso.router import router as sso_router
 from app.users.dependencies import GetCurrentUser
 from app.users.router import auth_router, user_router
 
@@ -20,6 +21,7 @@ main_router = APIRouter(
     },
 )
 main_router.include_router(auth_router)
+main_router.include_router(sso_router)
 main_router.include_router(protected_router)
 
 

@@ -81,10 +81,6 @@ class BearerToken(BackendBase):
     )
 
 
-class OIDCAuthorizeResponse(BackendBase):
-    url: str
-
-
 class Role(StrEnum):
     user = auto()
     superuser = auto()

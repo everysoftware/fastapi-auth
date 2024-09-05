@@ -35,14 +35,14 @@ class AuthSettings(BaseSettings):
     su_password: str = "changethis"
 
     google_sso_enabled: bool = False
-    google_client_id: str | None = None
-    google_client_secret: str | None = None
-    google_redirect_uri: str | None = None
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
 
     yandex_sso_enabled: bool = False
-    yandex_client_id: str | None = None
-    yandex_client_secret: str | None = None
-    yandex_redirect_uri: str | None = None
+    yandex_client_id: str = ""
+    yandex_client_secret: str = ""
+    yandex_redirect_uri: str = ""
 
     @model_validator(mode="after")
     def validate_google_sso(self) -> Self:
@@ -77,7 +77,7 @@ class AppSettings(BaseSettings):
     cors: CORSSettings = CORSSettings()
     auth: AuthSettings = AuthSettings()
 
-    model_config = SettingsConfigDict(extra="allow", env_file=".env")
+    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
 
 
 settings = AppSettings()

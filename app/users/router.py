@@ -1,14 +1,9 @@
 from typing import Annotated
 
-from fastapi import Depends, APIRouter, Query, Cookie
+from fastapi import Depends, APIRouter
 from starlette import status
-from starlette.requests import Request
-from starlette.responses import RedirectResponse
 
 from app.db.schemas import PageParams, Page
-from app.sso.base import SSOProvider
-from app.sso.dependencies import get_sso
-from app.sso.schemas import SSOCallback
 from app.users.auth import AuthorizationForm
 from app.users.dependencies import (
     UserServiceDep,
@@ -43,35 +38,6 @@ async def login(
     form: Annotated[AuthorizationForm, Depends()],
 ) -> BearerToken:
     return await service.authorize(form)
-
-
-@auth_router.get("/{provider}", status_code=status.HTTP_303_SEE_OTHER)
-async def sso_login(
-    service: UserServiceDep,
-    provider: Annotated[SSOProvider, Depends(get_sso)],
-    redirect_uri: str | None = Query(None),
-) -> RedirectResponse:
-    login_url = await service.sso_login(provider, redirect_uri)
-    response = RedirectResponse(login_url, status.HTTP_303_SEE_OTHER)
-    return response
-
-
-@auth_router.get("/{provider}/callback", status_code=status.HTTP_200_OK)
-async def sso_callback(
-    service: UserServiceDep,
-    provider: Annotated[SSOProvider, Depends(get_sso)],
-    request: Request,
-    code: str = Query(),
-    state: str | None = Query(None),
-    pkce_code_verifier: str | None = Cookie(None),
-) -> BearerToken:
-    callback = SSOCallback(
-        code=code,
-        url=str(request.url),
-        state=state,
-        pkce_code_verifier=pkce_code_verifier,
-    )
-    return await service.sso_callback(provider, callback)
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])

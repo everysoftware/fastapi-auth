@@ -1,11 +1,16 @@
-from typing import assert_never
+from typing import Annotated, assert_never
+
+from fastapi import Depends
 
 from app.config import settings
-from .base import SSOProvider
-from .exceptions import SSODisabled
-from .google import GoogleSSO
-from .schemas import SSOName
-from .yandex import YandexSSO
+from app.dependencies import UOWDep
+from app.sso.exceptions import SSODisabled
+from app.sso.providers.base import SSOProvider
+from app.sso.providers.google import GoogleSSO
+from app.sso.providers.schemas import SSOName
+from app.sso.providers.yandex import YandexSSO
+from app.sso.service import SSOService
+from app.users.dependencies import UserServiceDep
 
 
 def get_sso(provider: SSOName) -> SSOProvider:
@@ -13,7 +18,7 @@ def get_sso(provider: SSOName) -> SSOProvider:
         case SSOName.google:
             if not settings.auth.google_sso_enabled:
                 raise SSODisabled()
-            sso_provider = GoogleSSO(
+            return GoogleSSO(
                 settings.auth.google_client_id,
                 settings.auth.google_client_secret,
                 settings.auth.google_redirect_uri,
@@ -21,7 +26,7 @@ def get_sso(provider: SSOName) -> SSOProvider:
         case SSOName.yandex:
             if not settings.auth.yandex_sso_enabled:
                 raise SSODisabled()
-            sso_provider = YandexSSO(
+            return YandexSSO(
                 settings.auth.yandex_client_id,
                 settings.auth.yandex_client_secret,
                 settings.auth.yandex_redirect_uri,
@@ -29,4 +34,9 @@ def get_sso(provider: SSOName) -> SSOProvider:
         case _:
             assert_never(provider)
 
-    return sso_provider
+
+def get_sso_service(uow: UOWDep, users: UserServiceDep) -> SSOService:
+    return SSOService(uow, users=users)
+
+
+SSOServiceDep = Annotated[SSOService, Depends(get_sso_service)]

@@ -21,11 +21,11 @@ from typing import (
 import httpx
 import pydantic
 from oauthlib.oauth2 import WebApplicationClient
-from starlette.exceptions import HTTPException
 from starlette.responses import RedirectResponse
 
+from .exceptions import UnsetStateWarning, ReusedOauthClientWarning
 from .pkce import get_pkce_challenge_pair
-from .schemas import SSOCallback
+from .schemas import SSOCallback, OpenID
 from .state import generate_random_state
 
 logger = logging.getLogger(__name__)
@@ -37,33 +37,6 @@ class DiscoveryDocument(TypedDict):
     authorization_endpoint: str
     token_endpoint: str
     userinfo_endpoint: str
-
-
-class UnsetStateWarning(UserWarning):
-    """Warning about unset state parameter."""
-
-
-class ReusedOauthClientWarning(UserWarning):
-    """Warning about reused oauth client instance."""
-
-
-class SSOLoginError(HTTPException):
-    """Raised when any login-related error occurs.
-
-    Such as when user is not verified or if there was an attempt for fake login.
-    """
-
-
-class OpenID(pydantic.BaseModel):
-    """Class (schema) to represent information got from sso provider in a common form."""
-
-    id: Optional[str] = None
-    email: Optional[pydantic.EmailStr] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    display_name: Optional[str] = None
-    picture: Optional[str] = None
-    provider: Optional[str] = None
 
 
 class SSOProvider:
@@ -168,7 +141,7 @@ class SSOProvider:
         Returns:
             Optional[str]: The access token if available.
         """
-        return self.oauth_client.access_token
+        return self.oauth_client.access_token  # type: ignore[no-any-return]
 
     @property
     def refresh_token(self) -> Optional[str]:
@@ -189,7 +162,9 @@ class SSOProvider:
         return self._id_token
 
     async def openid_from_response(
-        self, response: dict, session: Optional[httpx.AsyncClient] = None
+        self,
+        response: dict[Any, Any],
+        session: Optional[httpx.AsyncClient] = None,
     ) -> OpenID:
         """Converts a response from the provider's user info endpoint to an OpenID object.
 
@@ -370,7 +345,7 @@ class SSOProvider:
                 warnings.warn(
                     "PKCE code verifier was not found in the request Cookie. This will probably lead to a login error."
                 )
-        return await self.process_login(  # type: ignore[no-any-return]
+        return await self.process_login(  # noqa
             callback,
             params=params,
             additional_headers=headers,
@@ -401,7 +376,7 @@ class SSOProvider:
         return None
 
     @property
-    def _extra_query_params(self) -> Dict:
+    def _extra_query_params(self) -> Dict[Any, Any]:
         return {}
 
     @overload
@@ -490,7 +465,7 @@ class SSOProvider:
             redirect_url=redirect_uri or self.redirect_uri or current_path,
             code=callback.code,
             **params,
-        )  # type: ignore
+        )  # noqa
 
         if token_url is None:  # pragma: no cover
             return None
@@ -517,4 +492,4 @@ class SSOProvider:
             content = response.json()
             if convert_response:
                 return await self.openid_from_response(content, session)
-            return content
+            return content  # type: ignore[no-any-return]

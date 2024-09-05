@@ -26,6 +26,7 @@ pre-commit = "^3.7.0"
 pytest = "^8.2.0"
 pytest-asyncio = "^0.23.6"
 sqlalchemy-utils = "^0.41.2"
+faker = "^28.4.1"
 
 
 [build-system]

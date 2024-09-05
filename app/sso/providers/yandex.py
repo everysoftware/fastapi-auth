@@ -1,8 +1,9 @@
 """Yandex SSO Login Helper."""
 
-from typing import TYPE_CHECKING, ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional, Any
 
-from app.sso.base import DiscoveryDocument, OpenID, SSOProvider
+from app.sso.providers.base import DiscoveryDocument, SSOProvider
+from app.sso.providers.schemas import OpenID
 
 if TYPE_CHECKING:
     import httpx  # pragma: no cover
@@ -24,7 +25,9 @@ class YandexSSO(SSOProvider):
         }
 
     async def openid_from_response(
-        self, response: dict, session: Optional["httpx.AsyncClient"] = None
+        self,
+        response: dict[Any, Any],
+        session: Optional["httpx.AsyncClient"] = None,
     ) -> OpenID:
         """Converts Yandex user info response to OpenID object."""
         picture = None

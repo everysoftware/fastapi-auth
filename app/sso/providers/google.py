@@ -1,15 +1,15 @@
 """Google SSO Login Helper."""
 
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Any
 
 import httpx
 
-from app.sso.base import (
+from app.sso.providers.base import (
     DiscoveryDocument,
-    OpenID,
     SSOProvider,
-    SSOLoginError,
 )
+from app.sso.providers.exceptions import SSOLoginError
+from app.sso.providers.schemas import OpenID
 
 
 class GoogleSSO(SSOProvider):
@@ -22,7 +22,9 @@ class GoogleSSO(SSOProvider):
     scope: ClassVar = ["openid", "email", "profile"]
 
     async def openid_from_response(
-        self, response: dict, session: Optional["httpx.AsyncClient"] = None
+        self,
+        response: dict[Any, Any],
+        session: Optional["httpx.AsyncClient"] = None,
     ) -> OpenID:
         """Return OpenID from user information provided by Google."""
         if response.get("email_verified"):
@@ -36,7 +38,7 @@ class GoogleSSO(SSOProvider):
                 picture=response.get("picture"),
             )
         raise SSOLoginError(
-            401, f"User {response.get('email')} is not verified with Google"
+            message=f"User {response.get('email')} is not verified with Google"
         )
 
     async def get_discovery_document(self) -> DiscoveryDocument:
@@ -44,4 +46,4 @@ class GoogleSSO(SSOProvider):
         async with httpx.AsyncClient() as session:
             response = await session.get(self.discovery_url)
             content = response.json()
-            return content
+            return content  # type: ignore[no-any-return]
