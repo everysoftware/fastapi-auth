@@ -9,7 +9,6 @@ from app.db.types import ID
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
 from app.service import Service
-from app.sso.schemas import SSOAccountRead
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -18,8 +17,6 @@ from app.users.exceptions import (
     InvalidToken,
     InvalidTokenType,
     UserNotFound,
-    SSOAlreadyAssociatedThisUser,
-    SSOAlreadyAssociatedAnotherUser,
 )
 from app.users.hashing import pwd_context
 from app.users.schemas import (
@@ -168,25 +165,6 @@ class UserService(Service):
                 )
             await self.uow.sso_accounts.create(user_id=user.id, **data)
         return self.create_token(user)
-
-    async def sso_connect(
-        self, user: UserRead, provider: SSOProvider, callback: SSOCallback
-    ) -> SSOAccountRead:
-        data = await self.get_sso_account(provider, callback)
-        account = await self.uow.sso_accounts.get_by_account_id(
-            provider.provider, data["account_id"]
-        )
-        if account:
-            if account.user_id == user.id:
-                raise SSOAlreadyAssociatedThisUser()
-            else:
-                raise SSOAlreadyAssociatedAnotherUser()
-        return await self.uow.sso_accounts.create(user_id=user.id, **data)
-
-    async def paginate_sso_accounts(
-        self, user: UserRead, params: PageParams
-    ) -> Page[SSOAccountRead]:
-        return await self.uow.sso_accounts.get_many_by_user_id(user.id, params)
 
     async def authorize(self, form: AuthorizationForm) -> BearerToken:
         match form.grant_type:

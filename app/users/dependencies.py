@@ -5,9 +5,13 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 
 from app.db.types import ID
 from app.dependencies import UOWDep
-from app.logging import logger
 from app.users.auth import PasswordBearerAuth
-from app.users.exceptions import SuperuserRightsRequired
+from app.users.exceptions import (
+    SuperuserRightsRequired,
+    PasswordSettingRequired,
+    VerificationRequired,
+    UserDisabled,
+)
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
@@ -38,10 +42,17 @@ yandex_scheme = OAuth2AuthorizationCodeBearer(
 
 
 class GetCurrentUser:
-    is_superuser: bool
-
-    def __init__(self, is_superuser: bool = False):
-        self.is_superuser = is_superuser
+    def __init__(
+        self,
+        requires_superuser: bool = False,
+        requires_password: bool = False,
+        requires_verified: bool = False,
+        requires_active: bool = True,
+    ):
+        self.requires_superuser = requires_superuser
+        self.requires_password = requires_password
+        self.requires_verified = requires_verified
+        self.requires_active = requires_active
 
     async def __call__(
         self,
@@ -50,17 +61,26 @@ class GetCurrentUser:
         _: Annotated[str, Depends(google_scheme)],
         __: Annotated[str, Depends(yandex_scheme)],
     ) -> UserRead:
-        logger.info("Obtained token: {token}", token=token)
         user = await users.validate_token(token)
-        logger.info("Obtained user: {user}", user=user.model_dump())
-        if self.is_superuser and not user.is_superuser:
+        if self.requires_superuser and not user.is_superuser:
             if not user.is_superuser:
                 raise SuperuserRightsRequired()
+        if self.requires_password and not user.has_password:
+            raise PasswordSettingRequired()
+        if self.requires_verified and not user.is_verified:
+            raise VerificationRequired()
+        if self.requires_active and not user.is_active:
+            raise UserDisabled()
         return user
 
 
 UserDep = Annotated[UserRead, Depends(GetCurrentUser())]
-SuperuserDep = Annotated[UserRead, Depends(GetCurrentUser(is_superuser=True))]
+SuperuserDep = Annotated[
+    UserRead, Depends(GetCurrentUser(requires_superuser=True))
+]
+PasswordUserDep = Annotated[
+    UserRead, Depends(GetCurrentUser(requires_password=True))
+]
 
 
 async def get_user(users: UserServiceDep, user_id: ID) -> UserRead:

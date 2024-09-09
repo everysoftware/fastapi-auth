@@ -157,7 +157,8 @@ async def delete(service: UserServiceDep, user: UserDep) -> UserRead:
 
 
 su_router = APIRouter(
-    tags=["Admin"], dependencies=[Depends(GetCurrentUser(is_superuser=True))]
+    tags=["Admin"],
+    dependencies=[Depends(GetCurrentUser(requires_superuser=True))],
 )
 
 

@@ -3,7 +3,13 @@ import uuid
 from enum import StrEnum, auto
 from typing import Literal
 
-from pydantic import Field, EmailStr, ConfigDict, field_serializer
+from pydantic import (
+    Field,
+    EmailStr,
+    ConfigDict,
+    field_serializer,
+    computed_field,
+)
 
 from app.config import settings
 from app.db.schemas import IDModel, TimestampModel
@@ -20,6 +26,10 @@ class UserRead(UserBase, IDModel, TimestampModel):
     is_active: bool
     is_superuser: bool
     is_verified: bool
+
+    @computed_field
+    def has_password(self) -> bool:
+        return bool(self.hashed_password)
 
 
 class UserCreate(UserBase):
