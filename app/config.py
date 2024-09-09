@@ -37,12 +37,10 @@ class AuthSettings(BaseSettings):
     google_sso_enabled: bool = False
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = ""
 
     yandex_sso_enabled: bool = False
     yandex_client_id: str = ""
     yandex_client_secret: str = ""
-    yandex_redirect_uri: str = ""
 
     @model_validator(mode="after")
     def validate_google_sso(self) -> Self:
@@ -51,7 +49,6 @@ class AuthSettings(BaseSettings):
             assert (
                 self.google_client_secret
             ), "Google client secret is required"
-            assert self.google_redirect_uri, "Google redirect URI is required"
         return self
 
     @model_validator(mode="after")
@@ -61,7 +58,6 @@ class AuthSettings(BaseSettings):
             assert (
                 self.yandex_client_secret
             ), "Yandex client secret is required"
-            assert self.yandex_redirect_uri, "Yandex redirect URI is required"
         return self
 
     model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)

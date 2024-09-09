@@ -24,14 +24,14 @@ password_scheme = PasswordBearerAuth(
     tokenUrl="auth/token", scheme_name="Password"
 )
 google_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="auth/google/login",
-    tokenUrl="auth/google/token",
+    authorizationUrl="sso/google/login",
+    tokenUrl="sso/google/token",
     refreshUrl="auth/token",
     scheme_name="GoogleOAuth",
 )
 yandex_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="auth/yandex/login",
-    tokenUrl="auth/yandex/token",
+    authorizationUrl="sso/yandex/login",
+    tokenUrl="sso/yandex/token",
     refreshUrl="auth/token",
     scheme_name="YandexOAuth",
 )

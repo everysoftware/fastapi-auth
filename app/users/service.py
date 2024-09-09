@@ -9,6 +9,7 @@ from app.db.types import ID
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
 from app.service import Service
+from app.sso.schemas import SSOAccountRead
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -160,13 +161,17 @@ class UserService(Service):
             account = await self.uow.sso_accounts.update(account.id, **data)
             user = await self.get_one(account.user_id)
         else:
-            user = await self.register(email=data["email"], is_verified=True)
+            user = await self.get_by_email(data["email"])
+            if not user:
+                user = await self.register(
+                    email=data["email"], is_verified=True
+                )
             await self.uow.sso_accounts.create(user_id=user.id, **data)
         return self.create_token(user)
 
-    async def associate_callback(
+    async def sso_connect(
         self, user: UserRead, provider: SSOProvider, callback: SSOCallback
-    ) -> BearerToken:
+    ) -> SSOAccountRead:
         data = await self.get_sso_account(provider, callback)
         account = await self.uow.sso_accounts.get_by_account_id(
             provider.provider, data["account_id"]
@@ -176,8 +181,12 @@ class UserService(Service):
                 raise SSOAlreadyAssociatedThisUser()
             else:
                 raise SSOAlreadyAssociatedAnotherUser()
-        await self.uow.sso_accounts.create(user_id=user.id, **data)
-        return self.create_token(user)
+        return await self.uow.sso_accounts.create(user_id=user.id, **data)
+
+    async def paginate_sso_accounts(
+        self, user: UserRead, params: PageParams
+    ) -> Page[SSOAccountRead]:
+        return await self.uow.sso_accounts.get_many_by_user_id(user.id, params)
 
     async def authorize(self, form: AuthorizationForm) -> BearerToken:
         match form.grant_type:

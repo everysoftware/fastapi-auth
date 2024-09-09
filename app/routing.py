@@ -5,10 +5,16 @@ from starlette import status
 
 from app.schemas import BackendErrorResponse
 from app.users.dependencies import GetCurrentUser
-from app.users.router import auth_router, user_router
+from app.users.router import auth_router, user_router, sso_router
+from app.sso.router import router as sso_accounts_router
 
 protected_router = APIRouter(dependencies=[Depends(GetCurrentUser())])
 protected_router.include_router(user_router)
+protected_router.include_router(sso_accounts_router)
+
+unprotected_router = APIRouter()
+unprotected_router.include_router(auth_router)
+unprotected_router.include_router(sso_router)
 
 main_router = APIRouter(
     responses={
@@ -19,7 +25,7 @@ main_router = APIRouter(
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": BackendErrorResponse},
     },
 )
-main_router.include_router(auth_router)
+main_router.include_router(unprotected_router)
 main_router.include_router(protected_router)
 
 

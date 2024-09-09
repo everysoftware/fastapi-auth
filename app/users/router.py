@@ -4,13 +4,14 @@ from fastapi import Depends, APIRouter, Query, Form
 from pydantic import AnyHttpUrl
 from starlette import status
 from starlette.requests import Request
-from starlette.responses import RedirectResponse
 
 from app.db.schemas import PageParams, Page
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
 from app.sso.dependencies import get_sso
+from app.sso.schemas import URLResponse
 from app.users.auth import AuthorizationForm
+from app.users.constants import CALLBACK_URL_EXAMPLE
 from app.users.dependencies import (
     UserServiceDep,
     UserDep,
@@ -44,20 +45,24 @@ async def register(
     """,
     status_code=status.HTTP_200_OK,
 )
-async def login(
+async def get_token(
     service: UserServiceDep,
     form: Annotated[AuthorizationForm, Depends()],
 ) -> BearerToken:
     return await service.authorize(form)
 
 
-@auth_router.get(
+sso_router = APIRouter(prefix="/sso", tags=["SSO"])
+
+
+@sso_router.get(
     "/{provider}/login",
-    description="""
+    description="""Redirects user to the provider's login page.
+
     SSO flow:
-    1. Frontend requests provider login URL (GET api.example.com/auth/{provider}/login) and redirects user to it.
+    1. Frontend requests provider login URL (GET api.example.com/sso/{provider}/login) and redirects user to it.
     2. Provider redirects user back to the redirect URI with authorization code (e.g. GET example.com/sso-callback).
-    3. Frontend sends the code to the backend to obtain token (POST api.example.com/auth/token).
+    3. Frontend sends the code to the backend to obtain token (POST api.example.com/sso/{provider}/token).
     4. Frontend uses the token to authenticate the user (e.g. GET api.example.com/users/me).
     """,
     status_code=status.HTTP_303_SEE_OTHER,
@@ -66,42 +71,34 @@ async def login(
 async def sso_login(
     service: UserServiceDep,
     provider: Annotated[SSOProvider, Depends(get_sso)],
-    redirect_uri: AnyHttpUrl,
-    state: str,
-) -> RedirectResponse:
+    redirect_uri: str = Query(
+        openapi_examples={
+            "Test example": {
+                "summary": "",
+                "value": CALLBACK_URL_EXAMPLE,
+            }
+        }
+    ),
+    state: str = Query(
+        openapi_examples={
+            "Test example": {"summary": "", "value": "test_state"}
+        }
+    ),
+    redirect: bool = True,
+) -> Any:
     login_url = await service.get_consent_url(
         provider,
         redirect_uri,
         state,
     )
-    return provider.get_login_redirect(login_url)
+    if redirect:
+        return provider.get_login_redirect(login_url)
+    return URLResponse(url=login_url)
 
 
-@auth_router.get(
-    "/{provider}/callback",
-    description="Redirect URI for testing SSO",
-    status_code=status.HTTP_200_OK,
-    tags=["SSO"],
-)
-async def sso_callback(
-    provider: Annotated[SSOProvider, Depends(get_sso)],
-    request: Request,
-    code: str = Query(),
-    state: str = Query(),
-    scope: str | None = Query(None),
-) -> dict[str, Any]:
-    return {
-        "url": str(request.url),
-        "provider": provider.provider,
-        "code": code,
-        "scope": scope,
-        "state": state,
-    }
-
-
-@auth_router.post(
+@sso_router.post(
     "/{provider}/token",
-    description="Authorize via SSO",
+    description="Exchanges authorization code for token.",
     status_code=status.HTTP_200_OK,
     tags=["SSO"],
 )
@@ -110,12 +107,33 @@ async def sso_token(
     provider: Annotated[SSOProvider, Depends(get_sso)],
     grant_type: Literal["authorization_code"] = Form(),
     code: str = Form(),
-    redirect_uri: AnyHttpUrl = Form(),
+    redirect_uri: AnyHttpUrl = Form(examples=[CALLBACK_URL_EXAMPLE]),
 ) -> BearerToken:
     callback = SSOCallback(
         grant_type=grant_type, code=code, redirect_uri=redirect_uri
     )
     return await service.sso_token(provider, callback)
+
+
+@sso_router.get(
+    "/{provider}/callback",
+    status_code=status.HTTP_200_OK,
+    tags=["SSO"],
+)
+async def sso_callback(
+    provider: Annotated[SSOProvider, Depends(get_sso)],
+    request: Request,
+    code: str,
+    state: str,
+    scope: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "url": str(request.url),
+        "provider": provider.provider,
+        "code": code,
+        "scope": scope,
+        "state": state,
+    }
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
