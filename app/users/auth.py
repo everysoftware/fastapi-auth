@@ -1,4 +1,4 @@
-from typing import Annotated, assert_never
+from typing import Annotated, assert_never, NoReturn
 
 from fastapi import Form
 from fastapi.security import (
@@ -14,54 +14,46 @@ from app.users.exceptions import NoTokenProvided
 from app.users.schemas import GrantType
 
 
-class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
-    grant_type: GrantType
+def raise_form_exc(msg: str) -> NoReturn:
+    raise ValidationError(
+        [
+            {
+                "loc": "form",
+                "msg": msg,
+            }
+        ]
+    )
 
+
+class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
     def __init__(
         self,
         *,
         grant_type: Annotated[
             GrantType,
-            Form(pattern="password|refresh_token|authorization_code"),
+            Form(),
         ],
         # Password
         username: Annotated[
             str | None,
             Form(
                 examples=["user@example.com"],
-                title="Used in password grant type",
             ),
         ] = None,
         password: Annotated[
             str | None,
-            Form(examples=["password"], title="Used in password grant type"),
+            Form(examples=["password"]),
         ] = None,
         # Refresh token
-        refresh_token: Annotated[
-            str | None, Form(title="Used in refresh token grant type")
-        ] = None,
+        refresh_token: Annotated[str | None, Form()] = None,
     ):
         match grant_type:
             case GrantType.password:
                 if not username or not password:
-                    raise ValidationError(
-                        [
-                            {
-                                "loc": "form",
-                                "msg": "Username and password are required",
-                            }
-                        ]
-                    )
+                    raise_form_exc("Username and password are required")
             case GrantType.refresh_token:
                 if not refresh_token:
-                    raise ValidationError(
-                        [
-                            {
-                                "loc": "form",
-                                "msg": "Refresh token is required",
-                            }
-                        ]
-                    )
+                    raise_form_exc("Refresh token is required")
             case _:
                 assert_never(grant_type)
 

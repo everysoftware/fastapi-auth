@@ -33,5 +33,9 @@ class BackendError(Exception):
         return f'{class_name}(message="{self.message}", error_code={self.error_code}, status_code={self.status_code})'
 
 
+class UnexpectedError(BackendError):
+    pass
+
+
 class ValidationError(RequestValidationError):
     pass

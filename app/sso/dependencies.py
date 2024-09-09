@@ -1,16 +1,11 @@
-from typing import Annotated, assert_never
-
-from fastapi import Depends
+from typing import assert_never
 
 from app.config import settings
-from app.dependencies import UOWDep
+from app.oidc.base import SSOProvider
+from app.oidc.google import GoogleSSO
+from app.oidc.schemas import SSOName
+from app.oidc.yandex import YandexSSO
 from app.sso.exceptions import SSODisabled
-from app.sso.providers.base import SSOProvider
-from app.sso.providers.google import GoogleSSO
-from app.sso.providers.schemas import SSOName
-from app.sso.providers.yandex import YandexSSO
-from app.sso.service import SSOService
-from app.users.dependencies import UserServiceDep
 
 
 def get_sso(provider: SSOName) -> SSOProvider:
@@ -33,10 +28,3 @@ def get_sso(provider: SSOName) -> SSOProvider:
             )
         case _:
             assert_never(provider)
-
-
-def get_sso_service(uow: UOWDep, users: UserServiceDep) -> SSOService:
-    return SSOService(uow, users=users)
-
-
-SSOServiceDep = Annotated[SSOService, Depends(get_sso_service)]

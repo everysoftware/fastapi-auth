@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
 )
 
-from app.sso.repositories import OIDCAccountRepository
+from app.sso.repositories import SSOAccountRepository
 from app.users.repositories import UserRepository
 
 
@@ -18,7 +18,7 @@ class UOW:
     transaction: AsyncSessionTransaction
 
     users: UserRepository
-    oidc_accounts: OIDCAccountRepository
+    sso_accounts: SSOAccountRepository
 
     def __init__(self, factory: async_sessionmaker[AsyncSession]):
         self.factory = factory
@@ -31,7 +31,7 @@ class UOW:
 
     async def on_open(self) -> None:
         self.users = UserRepository(self.session)
-        self.oidc_accounts = OIDCAccountRepository(self.session)
+        self.sso_accounts = SSOAccountRepository(self.session)
 
     async def open(self) -> None:
         self.session = self.factory()

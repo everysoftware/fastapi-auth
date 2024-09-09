@@ -3,10 +3,12 @@ from app.db.types import ID
 from app.schemas import BackendBase
 
 
-class OIDCAccountBase(BackendBase):
+class SSOAccountBase(BackendBase):
     user_id: ID
     provider: str
     access_token: str
+    expires_in: int | None
+    scope: str | None
     id_token: str | None
     refresh_token: str | None
     email: str | None
@@ -16,5 +18,5 @@ class OIDCAccountBase(BackendBase):
     picture: str | None
 
 
-class OIDCAccountRead(OIDCAccountBase, IDModel, TimestampModel):
+class OIDCAccountRead(SSOAccountBase, IDModel, TimestampModel):
     pass

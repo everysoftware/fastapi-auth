@@ -11,10 +11,11 @@ from app.schemas import BackendBase
 
 
 class UserBase(BackendBase):
-    email: EmailStr
+    pass
 
 
 class UserRead(UserBase, IDModel, TimestampModel):
+    email: EmailStr | None = None
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
@@ -22,6 +23,7 @@ class UserRead(UserBase, IDModel, TimestampModel):
 
 
 class UserCreate(UserBase):
+    email: EmailStr
     password: str
 
 

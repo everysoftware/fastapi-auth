@@ -4,12 +4,12 @@ from typing import ClassVar, Optional, Any
 
 import httpx
 
-from app.sso.providers.base import (
+from app.oidc.base import (
     DiscoveryDocument,
     SSOProvider,
 )
-from app.sso.providers.exceptions import SSOLoginError
-from app.sso.providers.schemas import OpenID
+from app.oidc.exceptions import OIDCLoginError
+from app.oidc.schemas import OpenID
 
 
 class GoogleSSO(SSOProvider):
@@ -37,7 +37,7 @@ class GoogleSSO(SSOProvider):
                 display_name=response.get("name"),
                 picture=response.get("picture"),
             )
-        raise SSOLoginError(
+        raise OIDCLoginError(
             message=f"User {response.get('email')} is not verified with Google"
         )
 

@@ -12,7 +12,7 @@ async def register_default_users() -> None:
         # superuser
         user = await users.get_by_email(settings.auth.su_email)
         if not user:
-            await users.register(
+            await users.register_by_schema(
                 UserCreate(
                     email=settings.auth.su_email,
                     password=settings.auth.su_password,
@@ -23,6 +23,6 @@ async def register_default_users() -> None:
         # user
         user = await users.get_by_email("user@example.com")
         if not user:
-            await users.register(
+            await users.register_by_schema(
                 UserCreate(email="user@example.com", password="password")
             )

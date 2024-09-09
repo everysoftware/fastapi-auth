@@ -6,17 +6,19 @@ from app.db.base import BaseOrm
 from app.db.mixins import IDMixin, TimestampMixin
 
 
-class OIDCAccountOrm(BaseOrm, IDMixin, TimestampMixin):
-    __tablename__ = "oidc_accounts"
+class SSOAccountOrm(BaseOrm, IDMixin, TimestampMixin):
+    __tablename__ = "sso_accounts"
 
     user_id: Mapped[UUID] = mapped_column(index=True)
     provider: Mapped[str]
-    account_id: Mapped[str | None]
+    account_id: Mapped[str]
     access_token: Mapped[str]
+    expires_in: Mapped[int | None]
+    scope: Mapped[str | None]
     id_token: Mapped[str | None]
     refresh_token: Mapped[str | None]
 
-    # OpenID Connect claims
+    # Personal data
     email: Mapped[str | None] = mapped_column(index=True)
     first_name: Mapped[str | None]
     last_name: Mapped[str | None]

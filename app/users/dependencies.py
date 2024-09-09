@@ -1,12 +1,13 @@
 from typing import Annotated
 
 from fastapi import Depends
+from fastapi.security import OAuth2AuthorizationCodeBearer
 
 from app.db.types import ID
 from app.dependencies import UOWDep
 from app.logging import logger
 from app.users.auth import PasswordBearerAuth
-from app.users.exceptions import SuperuserRightsRequired, UserNotFound
+from app.users.exceptions import SuperuserRightsRequired
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
@@ -19,7 +20,21 @@ def get_user_service(
 
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 
-oauth2_scheme = PasswordBearerAuth(tokenUrl="auth/token")
+password_scheme = PasswordBearerAuth(
+    tokenUrl="auth/token", scheme_name="Password"
+)
+google_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="auth/google/login",
+    tokenUrl="auth/google/token",
+    refreshUrl="auth/token",
+    scheme_name="GoogleOAuth",
+)
+yandex_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="auth/yandex/login",
+    tokenUrl="auth/yandex/token",
+    refreshUrl="auth/token",
+    scheme_name="YandexOAuth",
+)
 
 
 class GetCurrentUser:
@@ -31,7 +46,9 @@ class GetCurrentUser:
     async def __call__(
         self,
         users: UserServiceDep,
-        token: Annotated[str, Depends(oauth2_scheme)],
+        token: Annotated[str, Depends(password_scheme)],
+        _: Annotated[str, Depends(google_scheme)],
+        __: Annotated[str, Depends(yandex_scheme)],
     ) -> UserRead:
         logger.info("Obtained token: {token}", token=token)
         user = await users.validate_token(token)
@@ -47,7 +64,4 @@ SuperuserDep = Annotated[UserRead, Depends(GetCurrentUser(is_superuser=True))]
 
 
 async def get_user(users: UserServiceDep, user_id: ID) -> UserRead:
-    user = await users.get(user_id)
-    if user is None:
-        raise UserNotFound()
-    return user
+    return await users.get_one(user_id)
