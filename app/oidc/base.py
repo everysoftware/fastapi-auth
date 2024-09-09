@@ -14,7 +14,6 @@ from typing import (
     Type,
     TypedDict,
     Union,
-    Mapping,
     cast,
     overload,
     Literal,
@@ -307,8 +306,8 @@ class SSOProvider:
         self,
         callback: SSOCallback,
         *,
-        params: Mapping[str, Any] | None = None,
-        headers: Mapping[str, str] | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """
         Prepare token request to get the access token.
@@ -333,7 +332,7 @@ class SSOProvider:
                     "PKCE code verifier was not found in the callback. This will probably lead to a login error."
                 )
         redirect_uri = callback.redirect_uri or self.redirect_uri
-        token_url, headers, body = self.oauth_client.prepare_token_request(
+        token_url, _headers, body = self.oauth_client.prepare_token_request(
             await self.token_endpoint,
             redirect_url=redirect_uri,
             code=callback.code,
@@ -342,15 +341,15 @@ class SSOProvider:
         return {
             "url": token_url,
             "content": body,
-            "headers": headers | additional_headers,
+            "headers": _headers | additional_headers,
         }
 
     async def login(
         self,
         callback: SSOCallback,
         *,
-        params: Mapping[str, Any] | None = None,
-        headers: Mapping[str, str] | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> SSOBearerToken:
         """
         Login to the SSO provider and get the access token.
@@ -390,20 +389,20 @@ class SSOProvider:
     async def get_userinfo(
         self,
         convert_response: Literal[True] = True,
-        headers: Optional[Mapping[str, Any]] = None,
+        headers: Optional[dict[str, Any]] = None,
     ) -> OpenID: ...
 
     @overload
     async def get_userinfo(
         self,
         convert_response: Literal[False],
-        headers: Optional[Mapping[str, Any]] = None,
+        headers: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]: ...
 
     async def get_userinfo(
         self,
         convert_response: bool = True,
-        headers: Optional[Mapping[str, Any]] = None,
+        headers: dict[str, Any] | None = None,
     ) -> OpenID | dict[str, Any]:
         """
         Get user information from the userinfo endpoint.
@@ -417,8 +416,8 @@ class SSOProvider:
         """
         headers = headers or {}
         if self.headers:
-            headers.update(self.headers)
-        url, headers, _ = self.oauth_client.add_token(
+            headers |= self.headers
+        url, _headers, _ = self.oauth_client.add_token(
             await self.userinfo_endpoint, headers=headers
         )
         async with httpx.AsyncClient() as client:
@@ -426,4 +425,4 @@ class SSOProvider:
         content = response.json()
         if convert_response:
             return await self.openid_from_response(content, client)
-        return content
+        return content  # type: ignore[no-any-return]

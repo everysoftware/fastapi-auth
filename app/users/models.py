@@ -8,8 +8,10 @@ from app.db.mixins import TimestampMixin, IDMixin
 class UserOrm(BaseOrm, IDMixin, TimestampMixin):
     __tablename__ = "users"
 
+    first_name: Mapped[str | None]
+    last_name: Mapped[str | None]
     email: Mapped[str | None] = mapped_column(index=True)
-    hashed_password: Mapped[str | None] = mapped_column()
+    hashed_password: Mapped[str | None]
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -21,7 +21,7 @@ class SSOAccountService(Service):
         super().__init__(uow)
         self.users = users
 
-    async def get(self, account_id: ID) -> SSOAccountRead:
+    async def get(self, account_id: ID) -> SSOAccountRead | None:
         return await self.uow.sso_accounts.get(account_id)
 
     async def get_one(self, account_id: ID) -> SSOAccountRead:

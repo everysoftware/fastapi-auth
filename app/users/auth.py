@@ -26,6 +26,8 @@ def raise_form_exc(msg: str) -> NoReturn:
 
 
 class AuthorizationForm(FastAPIOAuth2PasswordRequestForm):
+    grant_type: GrantType
+
     def __init__(
         self,
         *,

@@ -34,7 +34,9 @@ async def register(
     service: UserServiceDep,
     user: UserCreate,
 ) -> UserRead:
-    return await service.register(user.email, user.password)
+    return await service.register(
+        user.first_name, user.last_name, user.email, user.password
+    )
 
 
 @auth_router.post(
@@ -71,7 +73,7 @@ sso_router = APIRouter(prefix="/sso", tags=["SSO"])
 async def sso_login(
     service: UserServiceDep,
     provider: Annotated[SSOProvider, Depends(get_sso)],
-    redirect_uri: str = Query(
+    redirect_uri: AnyHttpUrl = Query(
         openapi_examples={
             "Test example": {
                 "summary": "",
@@ -148,12 +150,12 @@ def me(user: UserDep) -> UserRead:
 async def patch(
     service: UserServiceDep, user: UserDep, update: UserUpdate
 ) -> UserRead:
-    return await service.update(user.id, update)
+    return await service.update(user, update)
 
 
 @user_router.delete("/me", status_code=status.HTTP_200_OK)
 async def delete(service: UserServiceDep, user: UserDep) -> UserRead:
-    return await service.delete(user.id)
+    return await service.delete(user)
 
 
 su_router = APIRouter(
@@ -173,14 +175,14 @@ async def update_by_id(
     user: Annotated[UserRead, Depends(get_user)],
     update: UserUpdate,
 ) -> UserRead:
-    return await service.update(user.id, update)
+    return await service.update(user, update)
 
 
 @su_router.delete("/{user_id}")
 async def delete_by_id(
     service: UserServiceDep, user: Annotated[UserRead, Depends(get_user)]
 ) -> UserRead:
-    return await service.delete(user.id)
+    return await service.delete(user)
 
 
 @su_router.get("/")
@@ -196,7 +198,7 @@ async def grant(
     user: Annotated[UserRead, Depends(get_user)],
     role: Role = Role.user,
 ) -> UserRead:
-    return await service.grant(user.id, role)
+    return await service.grant(user, role)
 
 
 user_router.include_router(su_router)

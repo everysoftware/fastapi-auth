@@ -1,6 +1,7 @@
 from typing import AsyncGenerator
 
 import pytest
+from faker import Faker
 from starlette.testclient import TestClient
 
 from app import app
@@ -24,7 +25,12 @@ def client() -> TestClient:
     return test_client
 
 
-user_create = UserCreate(email="user@example.com", password="test")
+faker = Faker()
+user_create = UserCreate(
+    first_name=faker.first_name(),
+    email=faker.email(),
+    password=faker.password(),
+)
 
 
 @pytest.fixture

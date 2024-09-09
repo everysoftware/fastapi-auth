@@ -21,23 +21,35 @@ class UserBase(BackendBase):
 
 
 class UserRead(UserBase, IDModel, TimestampModel):
+    first_name: str | None = None
+    last_name: str | None = None
     email: EmailStr | None = None
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
     is_verified: bool
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
+    @property
     def has_password(self) -> bool:
         return bool(self.hashed_password)
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def display_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
 
 class UserCreate(UserBase):
+    first_name: str = Field(examples=["John"])
+    last_name: str | None = Field(None, examples=["Doe"])
     email: EmailStr
     password: str
 
 
 class UserUpdate(BackendBase):
+    first_name: str | None = None
+    last_name: str | None = None
     email: EmailStr | None = None
     password: str | None = None
 

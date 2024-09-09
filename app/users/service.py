@@ -41,6 +41,8 @@ class UserService(Service):
 
     async def register(
         self,
+        first_name: str | None = None,
+        last_name: str | None = None,
         email: str | None = None,
         password: str | None = None,
         is_verified: bool = False,
@@ -54,6 +56,8 @@ class UserService(Service):
             hashed_password=hashed_password,
             is_verified=is_verified,
             is_superuser=is_superuser,
+            first_name=first_name,
+            last_name=last_name,
         )
         # TODO: Send email confirmation
         return user
@@ -158,10 +162,13 @@ class UserService(Service):
             account = await self.uow.sso_accounts.update(account.id, **data)
             user = await self.get_one(account.user_id)
         else:
-            user = await self.get_by_email(data["email"])
+            user = await self.get_by_email(data["email"])  # type: ignore[assignment]
             if not user:
                 user = await self.register(
-                    email=data["email"], is_verified=True
+                    first_name=data["first_name"],
+                    last_name=data["last_name"],
+                    email=data["email"],
+                    is_verified=True,
                 )
             await self.uow.sso_accounts.create(user_id=user.id, **data)
         return self.create_token(user)

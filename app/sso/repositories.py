@@ -28,7 +28,7 @@ class SSOAccountRepository(
     async def get_many_by_user_id(
         self, user_id: ID, params: PageParams
     ) -> Page[SSOAccountRead]:
-        stmt = select(SSOAccountOrm).where(SSOAccountOrm.user_id == user_id)  # type: ignore[arg-type]
+        stmt = select(SSOAccountOrm).where(SSOAccountOrm.user_id == user_id)  # noqa
         stmt = self.build_pagination_query(params, stmt)
         result = await self.session.scalars(stmt)
         return self.validate_page(result)
