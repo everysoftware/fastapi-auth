@@ -7,8 +7,9 @@ A production-ready template for FastAPI projects ⚡
 Main features of this template:
 
 - Secure **authorization** with JWT+RSA+Refresh Tokens
-- Simple and extendable **RBAC** (supports user & superuser roles)
-- Powerful **user management**
+- Extendable **single sign-on** via Google & Yandex
+- Extendable **role-based access control** (supports user & superuser)
+- Powerful **user** management
 - Offset **pagination** with sorting
 - Well-designed **architecture** & **file-structure** with SOLID & patterns applying
 - Fast **deployment** with Docker, Makefile, gunicorn & pre-commit
