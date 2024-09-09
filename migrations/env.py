@@ -26,7 +26,7 @@ target_metadata = BaseOrm.metadata
 
 current_url = config.get_main_option("sqlalchemy.url")
 if not current_url or current_url == "driver://user:pass@localhost/dbname":
-    config.set_main_option("sqlalchemy.url", settings.db_dsn)
+    config.set_main_option("sqlalchemy.url", settings.db.db_dsn)
 
 
 # other values from the config, defined by the needs of env.py,

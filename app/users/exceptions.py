@@ -45,5 +45,23 @@ class UserNotFound(Unauthorized):
 
 class SuperuserRightsRequired(BackendError):
     message = "You must be superuser to do this"
-    error_code = "superuser_rights_required"
+    error_code = "not_superuser"
+    status_code = status.HTTP_403_FORBIDDEN
+
+
+class PasswordSettingRequired(BackendError):
+    message = "You must set password to do this"
+    error_code = "password_not_set"
+    status_code = status.HTTP_403_FORBIDDEN
+
+
+class VerificationRequired(BackendError):
+    message = "You must set password to do this"
+    error_code = "not_verified"
+    status_code = status.HTTP_403_FORBIDDEN
+
+
+class UserDisabled(BackendError):
+    message = "User is disabled"
+    error_code = "user_disabled"
     status_code = status.HTTP_403_FORBIDDEN

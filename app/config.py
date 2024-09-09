@@ -1,24 +1,28 @@
-import os
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from dotenv import load_dotenv
-from pydantic import BaseModel
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+ENV_FILE = ".env"
 
-class CORSSettings(BaseModel):
+
+class CORSSettings(BaseSettings):
     cors_headers: list[str] = ["*"]
     cors_methods: list[str] = ["*"]
     cors_origins: list[str] = ["*"]
     cors_origin_regex: str | None = None
 
+    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
 
-class DBSettings(BaseModel):
+
+class DBSettings(BaseSettings):
     db_dsn: str = "postgresql+asyncpg://postgres:changethis@localhost:5432/app"
 
+    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
 
-class AuthSettings(BaseModel):
+
+class AuthSettings(BaseSettings):
     jwt_issuer: str = "https://example.com"
     jwt_audience: list[str] = ["https://example.com"]
     jwt_private_key: Path = Path("certs") / "jwt-private.pem"
@@ -30,32 +34,46 @@ class AuthSettings(BaseModel):
     su_email: str = "admin@example.com"
     su_password: str = "changethis"
 
+    google_sso_enabled: bool = False
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+    yandex_sso_enabled: bool = False
+    yandex_client_id: str = ""
+    yandex_client_secret: str = ""
+
+    @model_validator(mode="after")
+    def validate_google_sso(self) -> Self:
+        if self.google_sso_enabled:
+            assert self.google_client_id, "Google client ID is required"
+            assert (
+                self.google_client_secret
+            ), "Google client secret is required"
+        return self
+
+    @model_validator(mode="after")
+    def validate_yandex_sso(self) -> Self:
+        if self.yandex_sso_enabled:
+            assert self.yandex_client_id, "Yandex client ID is required"
+            assert (
+                self.yandex_client_secret
+            ), "Yandex client secret is required"
+        return self
+
+    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
+
 
 class AppSettings(BaseSettings):
-    title: str = "FastAPI"
-    version: str = "0.1.0"
-    env: Literal["dev", "prod", "test"] = "dev"
-    debug: bool = False
+    app_title: str = "FastAPI"
+    app_version: str = "0.1.0"
+    app_env: Literal["dev", "prod", "test"] = "dev"
+    app_debug: bool = False
 
     db: DBSettings = DBSettings()
     cors: CORSSettings = CORSSettings()
     auth: AuthSettings = AuthSettings()
 
-    model_config = SettingsConfigDict(extra="allow", env_prefix="app_")
+    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
 
 
-CANCEL_VAR = "NO_ENV_FILE"
-ENV_FILES = [".env"]
-
-
-def load_env() -> None:
-    if os.getenv(CANCEL_VAR):
-        return None
-    for file in ENV_FILES:
-        if load_dotenv(file):
-            return
-    raise ValueError(f"Environment file not found: {ENV_FILES}")
-
-
-load_env()
 settings = AppSettings()

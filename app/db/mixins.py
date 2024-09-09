@@ -1,7 +1,6 @@
 import datetime
 import uuid
 
-from sqlalchemy import func, Identity
 from sqlalchemy.orm import mapped_column, Mapped
 
 from app.db import utils
@@ -17,12 +16,6 @@ class Mixin:
     pass
 
 
-class IntIDMixin(Mixin):
-    id: Mapped[int] = mapped_column(
-        Identity(), primary_key=True, sort_order=-100
-    )
-
-
 class IDMixin(Mixin):
     id: Mapped[ID] = mapped_column(
         primary_key=True,
@@ -33,16 +26,10 @@ class IDMixin(Mixin):
 
 class TimestampMixin(Mixin):
     created_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=func.now(), sort_order=100
+        default=utils.naive_utc, sort_order=100
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=func.now(),
+        default=utils.naive_utc,
         onupdate=utils.naive_utc,
         sort_order=101,
-    )
-
-
-class SoftDeletableMixin(Mixin):
-    deleted_at: Mapped[datetime.datetime | None] = mapped_column(
-        sort_order=102
     )

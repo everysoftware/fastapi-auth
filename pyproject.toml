@@ -16,6 +16,7 @@ asyncpg = "^0.29.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 pyjwt = {extras = ["crypto"], version = "^2.9.0"}
 loguru = "^0.7.2"
+oauthlib = "^3.2.2"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -25,6 +26,7 @@ pre-commit = "^3.7.0"
 pytest = "^8.2.0"
 pytest-asyncio = "^0.23.6"
 sqlalchemy-utils = "^0.41.2"
+faker = "^28.4.1"
 
 
 [build-system]

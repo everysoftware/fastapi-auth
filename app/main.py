@@ -24,8 +24,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     lifespan=lifespan,
-    title=settings.title,
-    version=settings.version,
+    title=settings.app_title,
+    version=settings.app_version,
     summary="No description",
     root_path="/api/v1",
 )
