@@ -3,10 +3,10 @@ from typing import Any
 import humanize
 from sqladmin import ModelView
 
-from app.db import BaseOrm, SSOAccountOrm, UserOrm
+from app.db import SSOAccountOrm, UserOrm
 
 
-def time_format(m: BaseOrm, a: str) -> Any:
+def time_format(m: Any, a: Any) -> Any:
     return humanize.naturaltime(getattr(m, a))
 
 

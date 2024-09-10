@@ -14,8 +14,8 @@ class AdminAuth(AuthenticationBackend):
         data = await request.form()
         form = AuthorizationForm(
             grant_type=GrantType.password,
-            username=data["username"],
-            password=data["password"],
+            username=data["username"],  # type: ignore[arg-type]
+            password=data["password"],  # type: ignore[arg-type]
         )
 
         # Validate username/password credentials
