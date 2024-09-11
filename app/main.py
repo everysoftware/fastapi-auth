@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.admin.main import app as admin_app
 from app.config import settings
 from app.exceptions import BackendError
 from app.logging import logger
@@ -70,5 +71,6 @@ app.add_middleware(
     allow_methods=settings.cors.cors_methods,
     allow_headers=settings.cors.cors_headers,
 )
+app.mount("/admin", admin_app)
 
 app.include_router(main_router)
