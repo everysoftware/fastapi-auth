@@ -10,7 +10,7 @@ from app.oidc.schemas import SSOCallback
 from app.sso.dependencies import get_sso, SSOAccountServiceDep, get_account
 from app.sso.schemas import SSOAccountRead
 from app.users.constants import CALLBACK_URL_EXAMPLE
-from app.users.dependencies import UserDep, GetCurrentUser
+from app.users.dependencies import UserDep, Requires
 
 router = APIRouter(prefix="/sso-accounts", tags=["SSO Accounts"])
 
@@ -42,7 +42,7 @@ async def get(
 
 @router.delete(
     "/{account_id}",
-    dependencies=[Depends(GetCurrentUser(requires_password=True))],
+    dependencies=[Depends(Requires(has_password=True))],
     status_code=status.HTTP_200_OK,
 )
 async def delete(

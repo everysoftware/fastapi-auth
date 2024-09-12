@@ -8,6 +8,7 @@ from starlette.requests import Request
 from app.db.schemas import PageParams, Page
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
+from app.schemas import BackendOK
 from app.sso.dependencies import get_sso
 from app.sso.schemas import URLResponse
 from app.users.auth import AuthorizationForm
@@ -15,8 +16,8 @@ from app.users.constants import CALLBACK_URL_EXAMPLE
 from app.users.dependencies import (
     UserServiceDep,
     UserDep,
-    get_user,
-    GetCurrentUser,
+    get_user_by_id,
+    Requires,
 )
 from app.users.schemas import (
     UserCreate,
@@ -114,7 +115,7 @@ async def sso_token(
     callback = SSOCallback(
         grant_type=grant_type, code=code, redirect_uri=redirect_uri
     )
-    return await service.sso_token(provider, callback)
+    return await service.authorize_sso(provider, callback)
 
 
 @sso_router.get(
@@ -141,6 +142,17 @@ async def sso_callback(
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
+@user_router.get(
+    "/verify",
+    dependencies=[Depends(Requires(is_verified=False))],
+    status_code=status.HTTP_200_OK,
+)
+async def verify(
+    service: UserServiceDep, user: UserDep, code: str
+) -> UserRead:
+    return await service.verify(user, code)
+
+
 @user_router.get("/me", status_code=status.HTTP_200_OK)
 def me(user: UserDep) -> UserRead:
     return user
@@ -158,47 +170,66 @@ async def delete(service: UserServiceDep, user: UserDep) -> UserRead:
     return await service.delete(user)
 
 
-su_router = APIRouter(
+notify_router = APIRouter(prefix="/notify", tags=["Notifications"])
+
+
+@notify_router.post("/code", status_code=status.HTTP_200_OK)
+async def send_code(
+    service: UserServiceDep, user: UserDep, via: Literal["email"] = "email"
+) -> BackendOK:
+    return await service.send_code(user)
+
+
+@notify_router.get("/code/verify", status_code=status.HTTP_200_OK)
+async def verify_code(
+    service: UserServiceDep,
+    user: UserDep,
+    code: str,
+) -> BackendOK:
+    return await service.validate_code(user, code)
+
+
+admin_router = APIRouter(
     tags=["Admin"],
-    dependencies=[Depends(GetCurrentUser(requires_superuser=True))],
+    dependencies=[Depends(Requires(is_superuser=True))],
 )
 
 
-@su_router.get("/{user_id}")
-def get_by_id(user: Annotated[UserRead, Depends(get_user)]) -> UserRead:
+@admin_router.get("/{user_id}")
+def get_by_id(user: Annotated[UserRead, Depends(get_user_by_id)]) -> UserRead:
     return user
 
 
-@su_router.patch("/{user_id}")
+@admin_router.patch("/{user_id}")
 async def update_by_id(
     service: UserServiceDep,
-    user: Annotated[UserRead, Depends(get_user)],
+    user: Annotated[UserRead, Depends(get_user_by_id)],
     update: UserUpdate,
 ) -> UserRead:
     return await service.update(user, update)
 
 
-@su_router.delete("/{user_id}")
+@admin_router.delete("/{user_id}")
 async def delete_by_id(
-    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user)]
+    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user_by_id)]
 ) -> UserRead:
     return await service.delete(user)
 
 
-@su_router.get("/")
+@admin_router.get("/")
 async def get_many(
     service: UserServiceDep, params: Annotated[PageParams, Depends()]
 ) -> Page[UserRead]:
     return await service.get_many(params)
 
 
-@su_router.post("/{user_id}/grant")
+@admin_router.post("/{user_id}/grant")
 async def grant(
     service: UserServiceDep,
-    user: Annotated[UserRead, Depends(get_user)],
+    user: Annotated[UserRead, Depends(get_user_by_id)],
     role: Role = Role.user,
 ) -> UserRead:
     return await service.grant(user, role)
 
 
-user_router.include_router(su_router)
+user_router.include_router(admin_router)

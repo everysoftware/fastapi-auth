@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Email Letter</title>
+</head>
+<body>
+<div style="font-family: Arial, sans-serif; color: #333;">
+    <p>Hi, {{ user.first_name }}!</p>
+    <div class="main-content" id="content">
+        {% block content %}{% endblock %}
+    </div>
+    <p>Best regards,</p>
+    <p>EveryTech</p>
+</div>
+</body>

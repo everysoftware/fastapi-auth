@@ -38,30 +38,24 @@ class InvalidTokenType(Unauthorized):
     error_code = "invalid_token_type"
 
 
+class NoPermission(BackendError):
+    message = "You don't have permission to do this"
+    error_code = "no_permission"
+    status_code = status.HTTP_403_FORBIDDEN
+
+
 class UserNotFound(Unauthorized):
     message = "User with this id not found"
     error_code = "user_not_found"
 
 
-class SuperuserRightsRequired(BackendError):
-    message = "You must be superuser to do this"
-    error_code = "not_superuser"
-    status_code = status.HTTP_403_FORBIDDEN
+class CodeExpired(BackendError):
+    message = "Code expired"
+    error_code = "code_expired"
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
-class PasswordSettingRequired(BackendError):
-    message = "You must set password to do this"
-    error_code = "password_not_set"
-    status_code = status.HTTP_403_FORBIDDEN
-
-
-class VerificationRequired(BackendError):
-    message = "You must set password to do this"
-    error_code = "not_verified"
-    status_code = status.HTTP_403_FORBIDDEN
-
-
-class UserDisabled(BackendError):
-    message = "User is disabled"
-    error_code = "user_disabled"
-    status_code = status.HTTP_403_FORBIDDEN
+class WrongCode(BackendError):
+    message = "Wrong code"
+    error_code = "wrong_code"
+    status_code = status.HTTP_400_BAD_REQUEST

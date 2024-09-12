@@ -421,8 +421,9 @@ class SSOProvider:
             await self.userinfo_endpoint, headers=headers
         )
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(url, headers=_headers)
         content = response.json()
+        logger.info("User info response: %s", content)
         if convert_response:
             return await self.openid_from_response(content, client)
         return content  # type: ignore[no-any-return]

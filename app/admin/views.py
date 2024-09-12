@@ -4,10 +4,11 @@ import humanize
 from sqladmin import ModelView
 
 from app.db import SSOAccountOrm, UserOrm
+from app.db.utils import naive_utc
 
 
 def time_format(m: Any, a: Any) -> Any:
-    return humanize.naturaltime(getattr(m, a))
+    return humanize.naturaltime(getattr(m, a), when=naive_utc())
 
 
 class BaseView(ModelView):

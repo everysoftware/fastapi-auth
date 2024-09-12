@@ -9,6 +9,18 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    build:
+      context: .
+      dockerfile: docker/redis.Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - redis_data:/var/lib/redis/data
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
   fastapi:
     build:
       context: .
@@ -21,8 +33,10 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     volumes:
       - "./app:/opt/app/app"
 
 volumes:
   pg_data:
+  redis_data:

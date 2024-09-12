@@ -37,7 +37,11 @@ class UserRead(UserBase, IDModel, TimestampModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def display_name(self) -> str:
-        return f"{self.first_name} {self.last_name}"
+        return (
+            f"{self.first_name} {self.last_name}"
+            if self.last_name
+            else self.first_name
+        )
 
 
 class UserCreate(UserBase):
@@ -73,7 +77,7 @@ class TokenParams(BackendBase):
     algorithm: str = settings.auth.jwt_algorithm
     private_key: str = settings.auth.jwt_private_key.read_text()
     public_key: str = settings.auth.jwt_public_key.read_text()
-    type: TokenType
+    type: str
     expires_in: datetime.timedelta
 
 
@@ -81,7 +85,7 @@ class JWTClaims(BackendBase):
     jti: str = Field(default_factory=lambda: str(uuid.uuid4()))
     iss: str
     aud: list[str]
-    typ: TokenType
+    typ: str
     sub: str
     email: EmailStr | None = None
     iat: datetime.datetime

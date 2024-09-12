@@ -1,13 +1,22 @@
+import random
+import secrets
 import uuid
 from typing import assert_never, Any
 
 from jwt import InvalidTokenError
 from pydantic import AnyHttpUrl
 
+from app.cache.dependencies import CacheDep
+from app.config import settings
+from app.db.dependencies import UOWDep
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
+from app.notifications.dependencies import NotificationServiceDep
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
+from app.schemas import BackendOK, backend_ok
+from app.security.hashing import pwd_context
+from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
@@ -17,8 +26,9 @@ from app.users.exceptions import (
     InvalidToken,
     InvalidTokenType,
     UserNotFound,
+    CodeExpired,
+    WrongCode,
 )
-from app.users.hashing import pwd_context
 from app.users.schemas import (
     UserUpdate,
     UserRead,
@@ -28,14 +38,25 @@ from app.users.schemas import (
     GrantType,
 )
 from app.users.tokens import (
-    decode_jwt,
     access_params,
     refresh_params,
-    encode_jwt,
+    get_token_params,
 )
 
 
 class UserService(Service):
+    notifications: NotificationServiceDep
+
+    def __init__(
+        self,
+        uow: UOWDep,
+        cache: CacheDep,
+        *,
+        notifications: NotificationServiceDep,
+    ):
+        super().__init__(uow, cache)
+        self.notifications = notifications
+
     async def get_by_email(self, email: str) -> UserRead | None:
         return await self.uow.users.get_by_email(email)
 
@@ -59,7 +80,7 @@ class UserService(Service):
             first_name=first_name,
             last_name=last_name,
         )
-        # TODO: Send email confirmation
+        await self.send_code(user)
         return user
 
     async def get(self, user_id: ID) -> UserRead | None:
@@ -75,10 +96,6 @@ class UserService(Service):
         update_data = update.model_dump(
             exclude_none=True,
         )
-        if update.password is not None:
-            update_data["hashed_password"] = pwd_context.hash(
-                update_data.pop("password")
-            )
         return await self.uow.users.update(user.id, **update_data)
 
     async def delete(self, user: UserRead) -> UserRead:
@@ -99,7 +116,7 @@ class UserService(Service):
             expires_in=int(refresh_params.expires_in.total_seconds()),
         )
 
-    async def process_password_grant(
+    async def authorize_password(
         self,
         form: AuthorizationForm,
     ) -> UserRead:
@@ -113,23 +130,68 @@ class UserService(Service):
     async def validate_token(
         self, token: str, token_type: TokenType = TokenType.access
     ) -> UserRead:
-        params = (
-            access_params if token_type == TokenType.access else refresh_params
-        )
+        params = get_token_params(token_type)
         try:
             payload = decode_jwt(params, token)
         except InvalidTokenError as e:
             raise InvalidToken() from e
         if payload.typ != token_type:
             raise InvalidTokenType()
-        user = await self.get(uuid.UUID(payload.sub, version=4))
-        if user is None:
-            raise UserNotFound()
-        return user
+        return await self.get_one(uuid.UUID(payload.sub, version=4))
 
-    async def process_rt_grant(self, form: AuthorizationForm) -> UserRead:
-        assert form.refresh_token is not None
-        return await self.validate_token(form.refresh_token, TokenType.refresh)
+    async def refresh_token(self, token: str) -> UserRead:
+        return await self.validate_token(token, TokenType.refresh)
+
+    async def authorize(self, form: AuthorizationForm) -> BearerToken:
+        match form.grant_type:
+            case GrantType.password:
+                user = await self.authorize_password(form)
+            case GrantType.refresh_token:
+                user = await self.refresh_token(form.refresh_token)
+            case _:
+                assert_never(form.grant_type)
+        return self.create_token(user)
+
+    async def send_code(self, user: UserRead) -> BackendOK:
+        code = "".join(
+            random.choices("0123456789", k=settings.auth.code_length)
+        )
+        await self.cache.add(
+            f"codes:{user.id}", code, expire=settings.auth.code_expire
+        )
+        await self.notifications.send_email(
+            user,
+            "Your verification code",
+            "code",
+            code=code,
+        )
+        return backend_ok
+
+    async def validate_code(self, user: UserRead, code: str) -> BackendOK:
+        user_code = await self.cache.get(f"codes:{user.id}", cast=str)
+        if user_code is None:
+            raise CodeExpired()
+        if not secrets.compare_digest(user_code, code):
+            raise WrongCode()
+        await self.cache.delete(f"codes:{user.id}")
+        return backend_ok
+
+    async def verify(self, user: UserRead, code: str) -> UserRead:
+        await self.validate_code(user, code)
+        return await self.uow.users.update(user.id, is_verified=True)
+
+    async def get_many(self, params: PageParams) -> Page[UserRead]:
+        return await self.uow.users.get_many(params)
+
+    async def grant(self, user: UserRead, role: Role) -> UserRead:
+        match role:
+            case Role.user:
+                update_data = {"is_superuser": False}
+            case Role.superuser:
+                update_data = {"is_superuser": True}
+            case _:
+                assert_never(role)
+        return await self.uow.users.update(user.id, **update_data)
 
     @staticmethod
     async def get_consent_url(
@@ -151,7 +213,7 @@ class UserService(Service):
             **sso_token.model_dump(exclude={"token_type"}),
         }
 
-    async def sso_token(
+    async def authorize_sso(
         self, provider: SSOProvider, callback: SSOCallback
     ) -> BearerToken:
         data = await self.get_sso_account(provider, callback)
@@ -172,26 +234,3 @@ class UserService(Service):
                 )
             await self.uow.sso_accounts.create(user_id=user.id, **data)
         return self.create_token(user)
-
-    async def authorize(self, form: AuthorizationForm) -> BearerToken:
-        match form.grant_type:
-            case GrantType.password:
-                user = await self.process_password_grant(form)
-            case GrantType.refresh_token:
-                user = await self.process_rt_grant(form)
-            case _:
-                assert_never(form.grant_type)
-        return self.create_token(user)
-
-    async def get_many(self, params: PageParams) -> Page[UserRead]:
-        return await self.uow.users.get_many(params)
-
-    async def grant(self, user: UserRead, role: Role) -> UserRead:
-        match role:
-            case Role.user:
-                update_data = {"is_superuser": False}
-            case Role.superuser:
-                update_data = {"is_superuser": True}
-            case _:
-                assert_never(role)
-        return await self.uow.users.update(user.id, **update_data)

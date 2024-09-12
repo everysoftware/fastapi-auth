@@ -1,6 +1,6 @@
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
-from app.db.uow import UOW
+from app.db.dependencies import UOWDep
 from app.oidc.base import SSOProvider
 from app.oidc.schemas import SSOCallback
 from app.service import Service
@@ -10,6 +10,7 @@ from app.sso.exceptions import (
     SSOAccountNotFound,
 )
 from app.sso.schemas import SSOAccountRead
+from app.users.dependencies import UserServiceDep
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
@@ -17,7 +18,7 @@ from app.users.service import UserService
 class SSOAccountService(Service):
     users: UserService
 
-    def __init__(self, uow: UOW, users: UserService):
+    def __init__(self, uow: UOWDep, users: UserServiceDep):
         super().__init__(uow)
         self.users = users
 

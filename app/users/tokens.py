@@ -1,59 +1,27 @@
 import datetime
-
-import jwt
+from typing import assert_never
 
 from app.config import settings
 from app.users.schemas import (
     TokenType,
     TokenParams,
-    JWTClaims,
 )
 
 access_params = TokenParams(
     type=TokenType.access,
-    expires_in=datetime.timedelta(
-        minutes=settings.auth.jwt_access_expire_minutes
-    ),
+    expires_in=datetime.timedelta(seconds=settings.auth.jwt_access_expire),
 )
 refresh_params = TokenParams(
     type=TokenType.refresh,
-    expires_in=datetime.timedelta(
-        minutes=settings.auth.jwt_refresh_expire_minutes
-    ),
+    expires_in=datetime.timedelta(seconds=settings.auth.jwt_refresh_expire),
 )
 
 
-def encode_jwt(
-    params: TokenParams,
-    *,
-    subject: str,
-    email: str | None = None,
-) -> str:
-    now = datetime.datetime.now(datetime.UTC)
-    payload = JWTClaims(
-        iss=params.issuer,
-        aud=params.audience,
-        typ=params.type,
-        sub=subject,
-        iat=now,
-        nbf=now,
-        exp=now + params.expires_in,
-        email=email,
-    )
-    encoded = jwt.encode(
-        payload.model_dump(mode="json", exclude_none=True),
-        params.private_key,
-        algorithm=params.algorithm,
-    )
-    return encoded
-
-
-def decode_jwt(params: TokenParams, token: str) -> JWTClaims:
-    decoded = jwt.decode(
-        token,
-        params.public_key,
-        algorithms=[params.algorithm],
-        issuer=params.issuer,
-        audience=params.audience,
-    )
-    return JWTClaims.model_validate(decoded)
+def get_token_params(token_type: TokenType) -> TokenParams:
+    match token_type:
+        case TokenType.access:
+            return access_params
+        case TokenType.refresh:
+            return refresh_params
+        case _:
+            assert_never(token_type)
