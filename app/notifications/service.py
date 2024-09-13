@@ -19,7 +19,6 @@ class NotificationService(Service):
             msg = MailMessage(
                 subject=subject, template=template, user=user
             ).as_email(**kwargs)
-            print(msg.as_string())
             await run_in_threadpool(client.send_email, msg)
         else:
             warnings.warn(

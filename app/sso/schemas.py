@@ -1,28 +1,52 @@
-from pydantic import Field
+from enum import StrEnum, auto
+from typing import Optional, Literal
 
-from app.db.schemas import IDModel, TimestampModel
-from app.db.types import ID
+import pydantic
+from pydantic import AnyHttpUrl
+
 from app.schemas import BackendBase
 
 
-class SSOAccountBase(BackendBase):
-    user_id: ID
+class SSOName(StrEnum):
+    google = auto()
+    yandex = auto()
+
+
+class SSOCallback(BackendBase):
+    grant_type: Literal["authorization_code"] = "authorization_code"
+    code: str
+    redirect_uri: AnyHttpUrl
+    state: str | None = None
+    scope: str | None = None
+    pkce_code_verifier: str | None = None
+
+    @property
+    def scopes(self) -> list[str] | None:
+        if self.scope is not None:
+            return self.scope.split()
+        return None
+
+
+class SSOBearerToken(BackendBase):
+    access_token: str
+    token_type: Literal["Bearer", "bearer"] = "Bearer"
+    id_token: str | None = None
+    refresh_token: str | None = None
+    expires_in: int | None = None
+    scope: str | None = None
+
+    @property
+    def scopes(self) -> list[str] | None:
+        if self.scope is not None:
+            return self.scope.split()
+        return None
+
+
+class OpenID(BackendBase):
+    id: str
+    email: Optional[pydantic.EmailStr] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    display_name: Optional[str] = None
+    picture: Optional[str] = None
     provider: str
-    access_token: str = Field(exclude=True)
-    expires_in: int | None
-    scope: str | None
-    id_token: str | None = Field(exclude=True)
-    refresh_token: str | None = Field(exclude=True)
-    email: str | None
-    first_name: str | None
-    last_name: str | None
-    display_name: str | None
-    picture: str | None
-
-
-class SSOAccountRead(SSOAccountBase, IDModel, TimestampModel):
-    pass
-
-
-class URLResponse(BackendBase):
-    url: str

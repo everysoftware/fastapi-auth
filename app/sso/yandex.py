@@ -2,8 +2,8 @@
 
 from typing import TYPE_CHECKING, ClassVar, Optional, Any
 
-from app.oidc.base import DiscoveryDocument, SSOProvider
-from app.oidc.schemas import OpenID
+from app.sso.base import DiscoveryDocument, SSOProvider
+from app.sso.schemas import OpenID
 
 if TYPE_CHECKING:
     import httpx  # pragma: no cover

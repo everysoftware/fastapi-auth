@@ -4,13 +4,16 @@ from fastapi import Depends, APIRouter, Query, Form
 from pydantic import AnyHttpUrl
 from starlette import status
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
 
+from app.config import settings
 from app.db.schemas import PageParams, Page
-from app.oidc.base import SSOProvider
-from app.oidc.schemas import SSOCallback
 from app.schemas import BackendOK
+from app.sso.base import SSOProvider
 from app.sso.dependencies import get_sso
-from app.sso.schemas import URLResponse
+from app.sso.exceptions import SSODisabled
+from app.sso.schemas import SSOCallback, OpenID
+from app.sso_accounts.schemas import URLResponse, SSOAccountRead
 from app.users.auth import AuthorizationForm
 from app.users.constants import CALLBACK_URL_EXAMPLE
 from app.users.dependencies import (
@@ -25,6 +28,7 @@ from app.users.schemas import (
     UserUpdate,
     BearerToken,
     Role,
+    NotifyVia,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -56,6 +60,30 @@ async def get_token(
 
 
 sso_router = APIRouter(prefix="/sso", tags=["SSO"])
+
+
+@sso_router.get("/telegram/login", status_code=status.HTTP_303_SEE_OTHER)
+def telegram_login(user: UserDep, redirect: bool = True) -> Any:
+    if not settings.auth.telegram_sso_enabled:
+        raise SSODisabled()
+    login_url = (
+        f"https://t.me/{settings.auth.telegram_bot_username}?start={user.id}"
+    )
+    if not redirect:
+        return URLResponse(url=login_url)
+    return RedirectResponse(
+        url=login_url, status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@sso_router.post("/telegram/callback", status_code=status.HTTP_200_OK)
+def telegram_callback(bot_code: str, open_id: OpenID) -> dict[str, Any]:
+    return {"bot_code": bot_code, "open_id": open_id.model_dump()}
+
+
+@sso_router.post("/telegram/connect", status_code=status.HTTP_200_OK)
+def telegram_connect(bot_code: str, open_id: OpenID) -> dict[str, Any]:
+    return {"bot_code": bot_code, "open_id": open_id.model_dump()}
 
 
 @sso_router.get(
@@ -139,6 +167,21 @@ async def sso_callback(
     }
 
 
+@sso_router.post("/{provider}/connect", status_code=status.HTTP_201_CREATED)
+async def connect(
+    service: UserServiceDep,
+    provider: Annotated[SSOProvider, Depends(get_sso)],
+    user: UserDep,
+    grant_type: Literal["authorization_code"] = Form(),
+    code: str = Form(),
+    redirect_uri: AnyHttpUrl = Form(examples=[CALLBACK_URL_EXAMPLE]),
+) -> SSOAccountRead:
+    callback = SSOCallback(
+        grant_type=grant_type, code=code, redirect_uri=redirect_uri
+    )
+    return await service.connect(user, provider, callback)
+
+
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -175,7 +218,7 @@ notify_router = APIRouter(prefix="/notify", tags=["Notifications"])
 
 @notify_router.post("/code", status_code=status.HTTP_200_OK)
 async def send_code(
-    service: UserServiceDep, user: UserDep, via: Literal["email"] = "email"
+    service: UserServiceDep, user: UserDep, via: NotifyVia = "email"
 ) -> BackendOK:
     return await service.send_code(user)
 

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from starlette import status
 
 from app.schemas import BackendErrorResponse
-from app.sso.router import router as sso_accounts_router
+from app.sso_accounts.router import router as sso_accounts_router
 from app.users.dependencies import get_user
 from app.users.router import (
     auth_router,

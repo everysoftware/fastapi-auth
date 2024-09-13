@@ -12,12 +12,13 @@ from app.db.dependencies import UOWDep
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
 from app.notifications.dependencies import NotificationServiceDep
-from app.oidc.base import SSOProvider
-from app.oidc.schemas import SSOCallback
 from app.schemas import BackendOK, backend_ok
-from app.security.hashing import pwd_context
+from app.security.hashing import crypt_ctx
 from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
+from app.sso.base import SSOProvider
+from app.sso.schemas import SSOCallback
+from app.sso_accounts.schemas import SSOAccountRead
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -28,6 +29,8 @@ from app.users.exceptions import (
     UserNotFound,
     CodeExpired,
     WrongCode,
+    SSOAlreadyAssociatedThisUser,
+    SSOAlreadyAssociatedAnotherUser,
 )
 from app.users.schemas import (
     UserUpdate,
@@ -71,7 +74,7 @@ class UserService(Service):
     ) -> UserRead:
         if email and (await self.get_by_email(email)):
             raise UserAlreadyExists()
-        hashed_password = pwd_context.hash(password) if password else None
+        hashed_password = crypt_ctx.hash(password) if password else None
         user = await self.uow.users.create(
             email=email,
             hashed_password=hashed_password,
@@ -123,7 +126,7 @@ class UserService(Service):
         user = await self.get_by_email(form.username)
         if not user:
             raise UserEmailNotFound()
-        if not pwd_context.verify(form.password, user.hashed_password):
+        if not crypt_ctx.verify(form.password, user.hashed_password):
             raise WrongPassword()
         return user
 
@@ -234,3 +237,17 @@ class UserService(Service):
                 )
             await self.uow.sso_accounts.create(user_id=user.id, **data)
         return self.create_token(user)
+
+    async def connect(
+        self, user: UserRead, provider: SSOProvider, callback: SSOCallback
+    ) -> SSOAccountRead:
+        data = await self.get_sso_account(provider, callback)
+        account = await self.uow.sso_accounts.get_by_account_id(
+            provider.provider, data["account_id"]
+        )
+        if account:
+            if account.user_id == user.id:
+                raise SSOAlreadyAssociatedThisUser()
+            else:
+                raise SSOAlreadyAssociatedAnotherUser()
+        return await self.uow.sso_accounts.create(user_id=user.id, **data)

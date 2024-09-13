@@ -3,8 +3,8 @@ from sqlalchemy import select
 from app.db.repository import AlchemyGenericRepository
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
-from app.sso.models import SSOAccountOrm
-from app.sso.schemas import SSOAccountRead
+from app.sso_accounts.models import SSOAccountOrm
+from app.sso_accounts.schemas import SSOAccountRead
 
 
 class SSOAccountRepository(

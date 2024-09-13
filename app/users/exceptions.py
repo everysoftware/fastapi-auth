@@ -59,3 +59,15 @@ class WrongCode(BackendError):
     message = "Wrong code"
     error_code = "wrong_code"
     status_code = status.HTTP_400_BAD_REQUEST
+
+
+class SSOAlreadyAssociatedThisUser(BackendError):
+    message = "SSO account is already associated with this user"
+    error_code = "sso_already_associated"
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
+class SSOAlreadyAssociatedAnotherUser(BackendError):
+    message = "SSO account is already associated with another user"
+    error_code = "sso_already_associated"
+    status_code = status.HTTP_400_BAD_REQUEST

@@ -71,6 +71,11 @@ class GrantType(StrEnum):
     refresh_token = auto()
 
 
+class NotifyVia(StrEnum):
+    email = auto()
+    telegram = auto()
+
+
 class TokenParams(BackendBase):
     issuer: str = settings.auth.jwt_issuer
     audience: list[str] = settings.auth.jwt_audience

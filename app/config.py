@@ -42,6 +42,10 @@ class AuthSettings(BackendSettings):
     yandex_client_id: str = ""
     yandex_client_secret: str = ""
 
+    telegram_sso_enabled: bool = False
+    telegram_bot_username: str = ""
+    telegram_bot_token: str = ""
+
     code_length: int = 6
     code_expire: int = 15 * 60
 
