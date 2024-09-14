@@ -71,3 +71,9 @@ class SSOAlreadyAssociatedAnotherUser(BackendError):
     message = "SSO account is already associated with another user"
     error_code = "sso_already_associated"
     status_code = status.HTTP_400_BAD_REQUEST
+
+
+class TelegramNotConnected(BackendError):
+    message = "Telegram account is not connected"
+    error_code = "telegram_not_connected"
+    status_code = status.HTTP_400_BAD_REQUEST

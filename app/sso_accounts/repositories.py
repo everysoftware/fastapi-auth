@@ -13,8 +13,8 @@ class SSOAccountRepository(
     model_type = SSOAccountOrm
     schema_type = SSOAccountRead
 
-    async def get_by_account_id(
-        self, provider: str, account_id: ID
+    async def get_by_account(
+        self, provider: str, account_id: str
     ) -> SSOAccountRead | None:
         stmt = select(SSOAccountOrm).where(
             (SSOAccountOrm.provider == provider)  # noqa
@@ -25,7 +25,19 @@ class SSOAccountRepository(
             return None
         return SSOAccountRead.model_validate(result)
 
-    async def get_many_by_user_id(
+    async def get_by_user(
+        self, provider: str, user_id: ID
+    ) -> SSOAccountRead | None:
+        stmt = select(SSOAccountOrm).where(
+            (SSOAccountOrm.provider == provider)  # noqa
+            & (SSOAccountOrm.user_id == user_id)
+        )
+        result = await self.session.scalar(stmt)
+        if result is None:
+            return None
+        return SSOAccountRead.model_validate(result)
+
+    async def paginate_by_user(
         self, user_id: ID, params: PageParams
     ) -> Page[SSOAccountRead]:
         stmt = select(SSOAccountOrm).where(SSOAccountOrm.user_id == user_id)  # noqa

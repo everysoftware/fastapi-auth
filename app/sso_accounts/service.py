@@ -21,7 +21,7 @@ class SSOAccountService(Service):
     async def paginate(
         self, user: UserRead, params: PageParams
     ) -> Page[SSOAccountRead]:
-        return await self.uow.sso_accounts.get_many_by_user_id(user.id, params)
+        return await self.uow.sso_accounts.paginate_by_user(user.id, params)
 
     async def delete(self, account: SSOAccountRead) -> SSOAccountRead:
         return await self.uow.sso_accounts.delete(account.id)

@@ -7,6 +7,7 @@ from app.config import settings
 from app.mail import client
 from app.mail.base import MailMessage
 from app.service import Service
+from app.telegram.bot import bot
 from app.users.schemas import UserRead
 
 
@@ -23,5 +24,15 @@ class NotificationService(Service):
         else:
             warnings.warn(
                 "Emails are disabled. Set MAIL_ENABLED=True to enable sending emails.",
+                UserWarning,
+            )
+
+    @staticmethod
+    async def send_telegram(account_id: str, text: str) -> None:
+        if settings.auth.telegram_sso_enabled:
+            await bot.send_message(int(account_id), text)
+        else:
+            warnings.warn(
+                "Telegram SSO is disabled. Set TELEGRAM_SSO_ENABLED=True to enable sending Telegram messages.",
                 UserWarning,
             )

@@ -1,10 +1,9 @@
 import random
 import secrets
 import uuid
-from typing import assert_never, Any
+from typing import assert_never
 
 from jwt import InvalidTokenError
-from pydantic import AnyHttpUrl
 
 from app.cache.dependencies import CacheDep
 from app.config import settings
@@ -18,7 +17,7 @@ from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
 from app.sso.base import SSOProvider
 from app.sso.schemas import SSOCallback
-from app.sso_accounts.schemas import SSOAccountRead
+from app.sso_accounts.schemas import SSOAccountRead, SSOAccountCreate
 from app.users.auth import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -31,6 +30,7 @@ from app.users.exceptions import (
     WrongCode,
     SSOAlreadyAssociatedThisUser,
     SSOAlreadyAssociatedAnotherUser,
+    TelegramNotConnected,
 )
 from app.users.schemas import (
     UserUpdate,
@@ -39,6 +39,7 @@ from app.users.schemas import (
     BearerToken,
     TokenType,
     GrantType,
+    NotifyVia,
 )
 from app.users.tokens import (
     access_params,
@@ -155,19 +156,32 @@ class UserService(Service):
                 assert_never(form.grant_type)
         return self.create_token(user)
 
-    async def send_code(self, user: UserRead) -> BackendOK:
+    async def send_code(self, user: UserRead, via: NotifyVia) -> BackendOK:
         code = "".join(
             random.choices("0123456789", k=settings.auth.code_length)
         )
         await self.cache.add(
             f"codes:{user.id}", code, expire=settings.auth.code_expire
         )
-        await self.notifications.send_email(
-            user,
-            "Your verification code",
-            "code",
-            code=code,
-        )
+        match via:
+            case NotifyVia.email:
+                await self.notifications.send_email(
+                    user,
+                    "Your verification code",
+                    "code",
+                    code=code,
+                )
+            case NotifyVia.telegram:
+                account = await self.uow.sso_accounts.get_by_user(
+                    "telegram", user.id
+                )
+                if account is None:
+                    raise TelegramNotConnected()
+                await self.notifications.send_telegram(
+                    account.account_id, f"Your verification code: {code}"
+                )
+            case _:
+                assert_never(via)
         return backend_ok
 
     async def validate_code(self, user: UserRead, code: str) -> BackendOK:
@@ -197,34 +211,29 @@ class UserService(Service):
         return await self.uow.users.update(user.id, **update_data)
 
     @staticmethod
-    async def get_consent_url(
-        provider: SSOProvider, redirect_uri: AnyHttpUrl, state: str
-    ) -> str:
-        return await provider.get_login_url(
-            redirect_uri=redirect_uri, state=state
-        )
-
-    @staticmethod
-    async def get_sso_account(
+    async def get_data_from_provider(
         provider: SSOProvider, callback: SSOCallback
-    ) -> dict[str, Any]:
+    ) -> SSOAccountCreate:
         sso_token = await provider.login(callback)
         user_info = await provider.get_userinfo()
-        return {
-            "account_id": user_info.id,
+        return SSOAccountCreate(
+            account_id=user_info.id,
             **user_info.model_dump(exclude={"id"}),
             **sso_token.model_dump(exclude={"token_type"}),
-        }
+        )
 
     async def authorize_sso(
-        self, provider: SSOProvider, callback: SSOCallback
+        self,
+        data: SSOAccountCreate,
     ) -> BearerToken:
-        data = await self.get_sso_account(provider, callback)
-        account = await self.uow.sso_accounts.get_by_account_id(
-            provider.provider, data["account_id"]
+        account = await self.uow.sso_accounts.get_by_account(
+            data.provider, data.account_id
         )
+        data_dict = data.model_dump()
         if account:
-            account = await self.uow.sso_accounts.update(account.id, **data)
+            account = await self.uow.sso_accounts.update(
+                account.id, **data_dict
+            )
             user = await self.get_one(account.user_id)
         else:
             user = await self.get_by_email(data["email"])  # type: ignore[assignment]
@@ -235,19 +244,22 @@ class UserService(Service):
                     email=data["email"],
                     is_verified=True,
                 )
-            await self.uow.sso_accounts.create(user_id=user.id, **data)
+            await self.uow.sso_accounts.create(user_id=user.id, **data_dict)
         return self.create_token(user)
 
     async def connect(
-        self, user: UserRead, provider: SSOProvider, callback: SSOCallback
+        self,
+        user: UserRead,
+        data: SSOAccountCreate,
     ) -> SSOAccountRead:
-        data = await self.get_sso_account(provider, callback)
-        account = await self.uow.sso_accounts.get_by_account_id(
-            provider.provider, data["account_id"]
+        account = await self.uow.sso_accounts.get_by_account(
+            data.provider, data.account_id
         )
         if account:
             if account.user_id == user.id:
                 raise SSOAlreadyAssociatedThisUser()
             else:
                 raise SSOAlreadyAssociatedAnotherUser()
-        return await self.uow.sso_accounts.create(user_id=user.id, **data)
+        return await self.uow.sso_accounts.create(
+            user_id=user.id, **data.model_dump()
+        )

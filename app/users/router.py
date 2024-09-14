@@ -1,5 +1,6 @@
 from typing import Annotated, Any, Literal
 
+from aiogram.utils.deep_linking import create_start_link
 from fastapi import Depends, APIRouter, Query, Form
 from pydantic import AnyHttpUrl
 from starlette import status
@@ -13,7 +14,12 @@ from app.sso.base import SSOProvider
 from app.sso.dependencies import get_sso
 from app.sso.exceptions import SSODisabled
 from app.sso.schemas import SSOCallback, OpenID
-from app.sso_accounts.schemas import URLResponse, SSOAccountRead
+from app.sso_accounts.schemas import (
+    URLResponse,
+    SSOAccountRead,
+    SSOAccountCreate,
+)
+from app.telegram.bot import bot
 from app.users.auth import AuthorizationForm
 from app.users.constants import CALLBACK_URL_EXAMPLE
 from app.users.dependencies import (
@@ -63,12 +69,10 @@ sso_router = APIRouter(prefix="/sso", tags=["SSO"])
 
 
 @sso_router.get("/telegram/login", status_code=status.HTTP_303_SEE_OTHER)
-def telegram_login(user: UserDep, redirect: bool = True) -> Any:
+async def telegram_login(user: UserDep, redirect: bool = True) -> Any:
     if not settings.auth.telegram_sso_enabled:
         raise SSODisabled()
-    login_url = (
-        f"https://t.me/{settings.auth.telegram_bot_username}?start={user.id}"
-    )
+    login_url = await create_start_link(bot, user.id)
     if not redirect:
         return URLResponse(url=login_url)
     return RedirectResponse(
@@ -82,8 +86,14 @@ def telegram_callback(bot_code: str, open_id: OpenID) -> dict[str, Any]:
 
 
 @sso_router.post("/telegram/connect", status_code=status.HTTP_200_OK)
-def telegram_connect(bot_code: str, open_id: OpenID) -> dict[str, Any]:
-    return {"bot_code": bot_code, "open_id": open_id.model_dump()}
+async def telegram_connect(
+    service: UserServiceDep, bot_code: str, open_id: OpenID
+) -> SSOAccountRead:
+    user = await service.get_one(bot_code)
+    data = SSOAccountCreate(
+        account_id=open_id.id, **open_id.model_dump(exclude={"id"})
+    )
+    return await service.connect(user, data)
 
 
 @sso_router.get(
@@ -100,7 +110,6 @@ def telegram_connect(bot_code: str, open_id: OpenID) -> dict[str, Any]:
     tags=["SSO"],
 )
 async def sso_login(
-    service: UserServiceDep,
     provider: Annotated[SSOProvider, Depends(get_sso)],
     redirect_uri: AnyHttpUrl = Query(
         openapi_examples={
@@ -117,10 +126,8 @@ async def sso_login(
     ),
     redirect: bool = True,
 ) -> Any:
-    login_url = await service.get_consent_url(
-        provider,
-        redirect_uri,
-        state,
+    login_url = await provider.get_login_url(
+        redirect_uri=redirect_uri, state=state
     )
     if redirect:
         return provider.get_login_redirect(login_url)
@@ -143,7 +150,8 @@ async def sso_token(
     callback = SSOCallback(
         grant_type=grant_type, code=code, redirect_uri=redirect_uri
     )
-    return await service.authorize_sso(provider, callback)
+    data = await service.get_data_from_provider(provider, callback)
+    return await service.authorize_sso(data)
 
 
 @sso_router.get(
@@ -179,7 +187,8 @@ async def connect(
     callback = SSOCallback(
         grant_type=grant_type, code=code, redirect_uri=redirect_uri
     )
-    return await service.connect(user, provider, callback)
+    data = await service.get_data_from_provider(provider, callback)
+    return await service.connect(user, data)
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])

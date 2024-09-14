@@ -71,7 +71,7 @@ RUN python -m pip install -r requirements.txt
 
 # Set environment
 ENV APP_NAME=$APP_NAME
-ENV NO_ENV_FILE=1
+ENV ENVIRONMENT_SET=1
 
 # Copy files
 COPY ./$APP_NAME ./$APP_NAME

@@ -6,22 +6,26 @@ from app.schemas import BackendBase
 
 
 class SSOAccountBase(BackendBase):
-    user_id: ID
     provider: str
-    access_token: str = Field(exclude=True)
-    expires_in: int | None
-    scope: str | None
-    id_token: str | None = Field(exclude=True)
-    refresh_token: str | None = Field(exclude=True)
-    email: str | None
-    first_name: str | None
-    last_name: str | None
-    display_name: str | None
-    picture: str | None
+    account_id: str
+    access_token: str | None = Field(None, exclude=True)
+    expires_in: int | None = None
+    scope: str | None = None
+    id_token: str | None = Field(None, exclude=True)
+    refresh_token: str | None = Field(None, exclude=True)
+    email: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    display_name: str | None = None
+    picture: str | None = None
+
+
+class SSOAccountCreate(SSOAccountBase):
+    pass
 
 
 class SSOAccountRead(SSOAccountBase, IDModel, TimestampModel):
-    pass
+    user_id: ID
 
 
 class URLResponse(BackendBase):

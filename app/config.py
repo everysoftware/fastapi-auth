@@ -1,14 +1,17 @@
+import os
 from pathlib import Path
 from typing import Literal, Self
 
+from dotenv import load_dotenv
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_FILE = ".env"
+if not os.getenv("ENVIRONMENT_SET"):
+    load_dotenv(".env")
 
 
 class BackendSettings(BaseSettings):
-    model_config = SettingsConfigDict(extra="allow", env_file=ENV_FILE)
+    model_config = SettingsConfigDict(extra="allow")
 
 
 class CORSSettings(BackendSettings):
@@ -65,6 +68,15 @@ class AuthSettings(BackendSettings):
             assert (
                 self.yandex_client_secret
             ), "Yandex client secret is required"
+        return self
+
+    @model_validator(mode="after")
+    def validate_telegram_sso(self) -> Self:
+        if self.telegram_sso_enabled:
+            assert (
+                self.telegram_bot_username
+            ), "Telegram bot username is required"
+            assert self.telegram_bot_token, "Telegram bot token is required"
         return self
 
 

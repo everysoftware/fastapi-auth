@@ -12,7 +12,7 @@ class SSOAccountOrm(BaseOrm, IDMixin, TimestampMixin):
     user_id: Mapped[UUID] = mapped_column(index=True)
     provider: Mapped[str]
     account_id: Mapped[str]
-    access_token: Mapped[str]
+    access_token: Mapped[str | None]
     expires_in: Mapped[int | None]
     scope: Mapped[str | None]
     id_token: Mapped[str | None]
