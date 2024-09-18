@@ -1,39 +1,59 @@
 from typing import Annotated
 
 from fastapi import Depends
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import (
+    OAuth2AuthorizationCodeBearer,
+    APIKeyHeader,
+    APIKeyCookie,
+    OAuth2PasswordBearer,
+)
 
 from app.db.types import ID
-from app.users.auth import PasswordBearerAuth
+from app.users.auth import BackendAuth
+from app.users.constants import TOKEN_HEADER_NAME, TOKEN_COOKIE_NAME
 from app.users.exceptions import NoPermission
 from app.users.schemas import UserRead
 from app.users.service import UserService
 
 UserServiceDep = Annotated[UserService, Depends()]
 
-password_scheme = PasswordBearerAuth(
-    tokenUrl="auth/token", scheme_name="Password"
-)
-google_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="sso/google/login",
-    tokenUrl="sso/google/token",
-    refreshUrl="auth/token",
-    scheme_name="GoogleOAuth",
-)
-yandex_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="sso/yandex/login",
-    tokenUrl="sso/yandex/token",
-    refreshUrl="auth/token",
-    scheme_name="YandexOAuth",
-)
+auth_schemes = [
+    APIKeyHeader(
+        name=TOKEN_HEADER_NAME,
+        scheme_name="BearerHeader",
+        auto_error=False,
+    ),
+    APIKeyCookie(
+        name=TOKEN_COOKIE_NAME,
+        scheme_name="BearerCookie",
+        auto_error=False,
+    ),
+    OAuth2PasswordBearer(
+        tokenUrl="auth/token", scheme_name="Password", auto_error=False
+    ),
+    OAuth2AuthorizationCodeBearer(
+        authorizationUrl="sso/google/login",
+        tokenUrl="sso/google/token",
+        refreshUrl="auth/token",
+        scheme_name="GoogleOAuth",
+        auto_error=False,
+    ),
+    OAuth2AuthorizationCodeBearer(
+        authorizationUrl="sso/yandex/login",
+        tokenUrl="sso/yandex/token",
+        refreshUrl="auth/token",
+        scheme_name="YandexOAuth",
+        auto_error=False,
+    ),
+]
+auth = BackendAuth()
 
 
 def get_token(
-    token: Annotated[str, Depends(password_scheme)],
-    google_token: Annotated[str, Depends(google_scheme)],
-    yandex_token: Annotated[str, Depends(yandex_scheme)],
+    token: Annotated[str, Depends(auth)],
+    # SWAGGER SCHEMAS
 ) -> str:
-    return token or google_token or yandex_token
+    return token
 
 
 class GetCurrentUser:

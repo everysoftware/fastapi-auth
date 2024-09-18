@@ -49,12 +49,6 @@ class UserNotFound(Unauthorized):
     error_code = "user_not_found"
 
 
-class CodeExpired(BackendError):
-    message = "Code expired"
-    error_code = "code_expired"
-    status_code = status.HTTP_400_BAD_REQUEST
-
-
 class WrongCode(BackendError):
     message = "Wrong code"
     error_code = "wrong_code"
@@ -76,4 +70,10 @@ class SSOAlreadyAssociatedAnotherUser(BackendError):
 class TelegramNotConnected(BackendError):
     message = "Telegram account is not connected"
     error_code = "telegram_not_connected"
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
+class EmailNotSet(BackendError):
+    message = "Email is not set"
+    error_code = "email_not_set"
     status_code = status.HTTP_400_BAD_REQUEST

@@ -2,14 +2,14 @@
 
 from typing import TYPE_CHECKING, ClassVar, Optional, Any
 
-from app.sso.base import DiscoveryDocument, SSOProvider
+from app.sso.base import DiscoveryDocument, SSOBase
 from app.sso.schemas import OpenID
 
 if TYPE_CHECKING:
     import httpx  # pragma: no cover
 
 
-class YandexSSO(SSOProvider):
+class YandexSSO(SSOBase):
     """Class providing login using Yandex OAuth."""
 
     provider = "yandex"

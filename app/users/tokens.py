@@ -2,16 +2,26 @@ import datetime
 from typing import assert_never
 
 from app.config import settings
+from app.security.tokens import TokenParams
 from app.users.schemas import (
     TokenType,
-    TokenParams,
 )
 
 access_params = TokenParams(
+    issuer=settings.auth.jwt_issuer,
+    audience=settings.auth.jwt_audience,
+    algorithm=settings.auth.jwt_algorithm,
+    private_key=settings.auth.jwt_private_key.read_text(),
+    public_key=settings.auth.jwt_public_key.read_text(),
     type=TokenType.access,
     expires_in=datetime.timedelta(seconds=settings.auth.jwt_access_expire),
 )
 refresh_params = TokenParams(
+    issuer=settings.auth.jwt_issuer,
+    audience=settings.auth.jwt_audience,
+    algorithm=settings.auth.jwt_algorithm,
+    private_key=settings.auth.jwt_private_key.read_text(),
+    public_key=settings.auth.jwt_public_key.read_text(),
     type=TokenType.refresh,
     expires_in=datetime.timedelta(seconds=settings.auth.jwt_refresh_expire),
 )

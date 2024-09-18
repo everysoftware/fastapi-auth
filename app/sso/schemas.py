@@ -1,5 +1,5 @@
 from enum import StrEnum, auto
-from typing import Optional, Literal
+from typing import Literal
 
 import pydantic
 from pydantic import AnyHttpUrl
@@ -13,7 +13,6 @@ class SSOName(StrEnum):
 
 
 class SSOCallback(BackendBase):
-    grant_type: Literal["authorization_code"] = "authorization_code"
     code: str
     redirect_uri: AnyHttpUrl
     state: str | None = None
@@ -44,9 +43,9 @@ class SSOBearerToken(BackendBase):
 
 class OpenID(BackendBase):
     id: str
-    email: Optional[pydantic.EmailStr] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    display_name: Optional[str] = None
-    picture: Optional[str] = None
     provider: str
+    email: pydantic.EmailStr | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    display_name: str | None = None
+    picture: str | None = None

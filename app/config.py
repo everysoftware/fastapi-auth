@@ -46,11 +46,11 @@ class AuthSettings(BackendSettings):
     yandex_client_secret: str = ""
 
     telegram_sso_enabled: bool = False
-    telegram_bot_username: str = ""
     telegram_bot_token: str = ""
+    telegram_auth_data_expire: int = 5 * 60
 
     code_length: int = 6
-    code_expire: int = 15 * 60
+    code_expire: int = 5 * 60
 
     @model_validator(mode="after")
     def validate_google_sso(self) -> Self:
@@ -73,9 +73,6 @@ class AuthSettings(BackendSettings):
     @model_validator(mode="after")
     def validate_telegram_sso(self) -> Self:
         if self.telegram_sso_enabled:
-            assert (
-                self.telegram_bot_username
-            ), "Telegram bot username is required"
             assert self.telegram_bot_token, "Telegram bot token is required"
         return self
 

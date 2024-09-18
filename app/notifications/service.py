@@ -7,7 +7,7 @@ from app.config import settings
 from app.mail import client
 from app.mail.base import MailMessage
 from app.service import Service
-from app.telegram.bot import bot
+from app.telegram.dependencies import bot
 from app.users.schemas import UserRead
 
 

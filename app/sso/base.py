@@ -1,19 +1,14 @@
 """SSO login base dependency."""
 
 import json
-import logging
 import os
 import warnings
 from types import TracebackType
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
     Optional,
-    Type,
     TypedDict,
-    Union,
     cast,
     overload,
     Literal,
@@ -25,12 +20,11 @@ from oauthlib.oauth2 import WebApplicationClient
 from starlette import status
 from starlette.responses import RedirectResponse
 
+from app.logging import logger
 from .exceptions import UnsetStateWarning
 from .pkce import get_pkce_challenge_pair
 from .schemas import SSOCallback, OpenID, SSOBearerToken
 from .state import generate_random_state
-
-logger = logging.getLogger(__name__)
 
 
 class DiscoveryDocument(TypedDict):
@@ -39,17 +33,19 @@ class DiscoveryDocument(TypedDict):
     userinfo_endpoint: str
 
 
-class SSOProvider:
-    """Base class for all SSO providers."""
+type RedirectURI = pydantic.AnyHttpUrl | str
 
+
+class SSOBase:
     provider: str = NotImplemented
     client_id: str = NotImplemented
     client_secret: str = NotImplemented
-    redirect_uri: Optional[Union[pydantic.AnyHttpUrl, str]] = NotImplemented
-    scope: ClassVar[List[str]] = []
-    headers: ClassVar[Optional[Dict[str, Any]]] = None
+    redirect_uri: RedirectURI | None = NotImplemented
+    scope: ClassVar[list[str]] = []
+    headers: ClassVar[dict[str, Any] | None] = None
     uses_pkce: bool = False
     requires_state: bool = False
+    allow_insecure_http: bool = False
 
     _pkce_challenge_length: int = 96
 
@@ -57,17 +53,14 @@ class SSOProvider:
         self,
         client_id: str,
         client_secret: str,
-        redirect_uri: Optional[Union[pydantic.AnyHttpUrl, str]] = None,
+        redirect_uri: RedirectURI | None = None,
         allow_insecure_http: bool = False,
-        scope: Optional[List[str]] = None,
+        scope: list[str] | None = None,
     ):
-        """Base class (mixin) for all SSO providers."""
-        self.client_id: str = client_id
-        self.client_secret: str = client_secret
-        self.redirect_uri: Optional[Union[pydantic.AnyHttpUrl, str]] = (
-            redirect_uri
-        )
-        self.allow_insecure_http: bool = allow_insecure_http
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.redirect_uri = redirect_uri
+        self.allow_insecure_http = allow_insecure_http
         self._oauth_client: Optional[WebApplicationClient] = None
         self._generated_state: Optional[str] = None
 
@@ -79,15 +72,15 @@ class SSOProvider:
             os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
         self._scopes = scope or self.scope
-        self._refresh_token: Optional[str] = None
-        self._id_token: Optional[str] = None
-        self._state: Optional[str] = None
-        self._pkce_code_challenge: Optional[str] = None
-        self._pkce_code_verifier: Optional[str] = None
+        self._refresh_token: str | None = None
+        self._id_token: str | None = None
+        self._state: str | None = None
+        self._pkce_code_challenge: str | None = None
+        self._pkce_code_verifier: str | None = None
         self._pkce_challenge_method = "S256"
 
     @property
-    def state(self) -> Optional[str]:
+    def state(self) -> str | None:
         """Retrieves the state as it was returned from the server.
 
         Warning:
@@ -125,7 +118,7 @@ class SSOProvider:
         return self._oauth_client
 
     @property
-    def access_token(self) -> Optional[str]:
+    def access_token(self) -> str | None:
         """Retrieves the access token from token endpoint.
 
         Returns:
@@ -134,7 +127,7 @@ class SSOProvider:
         return self.oauth_client.access_token  # type: ignore[no-any-return]
 
     @property
-    def refresh_token(self) -> Optional[str]:
+    def refresh_token(self) -> str | None:
         """Retrieves the refresh token if returned from provider.
 
         Returns:
@@ -143,7 +136,7 @@ class SSOProvider:
         return self._refresh_token or self.oauth_client.refresh_token
 
     @property
-    def id_token(self) -> Optional[str]:
+    def id_token(self) -> str | None:
         """Retrieves the id token if returned from provider.
 
         Returns:
@@ -191,28 +184,28 @@ class SSOProvider:
         raise NotImplementedError(f"Provider {self.provider} not supported")
 
     @property
-    async def authorization_endpoint(self) -> Optional[str]:
+    async def authorization_endpoint(self) -> str | None:
         """Return `authorization_endpoint` from discovery document."""
         discovery = await self.get_discovery_document()
         return discovery.get("authorization_endpoint")
 
     @property
-    async def token_endpoint(self) -> Optional[str]:
+    async def token_endpoint(self) -> str | None:
         """Return `token_endpoint` from discovery document."""
         discovery = await self.get_discovery_document()
         return discovery.get("token_endpoint")
 
     @property
-    async def userinfo_endpoint(self) -> Optional[str]:
+    async def userinfo_endpoint(self) -> str | None:
         """Return `userinfo_endpoint` from discovery document."""
         discovery = await self.get_discovery_document()
         return discovery.get("userinfo_endpoint")
 
     @property
-    def _extra_query_params(self) -> Dict[Any, Any]:
+    def _extra_query_params(self) -> dict[Any, Any]:
         return {}
 
-    def __enter__(self) -> "SSOProvider":
+    def __enter__(self) -> "SSOBase":
         self._oauth_client = None
         self._refresh_token = None
         self._id_token = None
@@ -227,18 +220,18 @@ class SSOProvider:
 
     def __exit__(
         self,
-        _exc_type: Optional[Type[BaseException]],
-        _exc_val: Optional[BaseException],
-        _exc_tb: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: TracebackType | None,
     ) -> None:
         return None
 
     async def get_login_url(
         self,
         *,
-        redirect_uri: Optional[Union[pydantic.AnyHttpUrl, str]] = None,
-        params: Optional[Dict[str, Any]] = None,
-        state: Optional[str] = None,
+        redirect_uri: RedirectURI | None = None,
+        params: dict[str, Any] | None = None,
+        state: str | None = None,
     ) -> str:
         """Generates and returns the prepared login URL.
 
@@ -286,7 +279,7 @@ class SSOProvider:
         )
         return cast(str, request_uri)
 
-    def get_login_redirect(self, login_url: str) -> RedirectResponse:
+    def redirect(self, login_url: str) -> RedirectResponse:
         """Redirects to the login URL.
 
         Args:
@@ -356,8 +349,8 @@ class SSOProvider:
 
         Args:
             callback (SSOCallback): The callback URL with code and other params.
-            params (Mapping[str, Any]): Additional query parameters to add to the token request.
-            headers (Mapping[str, str]): Additional headers to add to the token request.
+            params (dict[str, Any]): Additional query parameters to add to the token request.
+            headers (dict[str, str]): Additional headers to add to the token request.
 
         Returns:
             SSOBearerToken: The bearer token with access token and other details.
@@ -388,6 +381,7 @@ class SSOProvider:
     @overload
     async def get_userinfo(
         self,
+        *,
         convert_response: Literal[True] = True,
         headers: Optional[dict[str, Any]] = None,
     ) -> OpenID: ...
@@ -395,12 +389,14 @@ class SSOProvider:
     @overload
     async def get_userinfo(
         self,
+        *,
         convert_response: Literal[False],
         headers: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]: ...
 
     async def get_userinfo(
         self,
+        *,
         convert_response: bool = True,
         headers: dict[str, Any] | None = None,
     ) -> OpenID | dict[str, Any]:
@@ -423,7 +419,6 @@ class SSOProvider:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=_headers)
         content = response.json()
-        logger.info("User info response: %s", content)
         if convert_response:
             return await self.openid_from_response(content, client)
         return content  # type: ignore[no-any-return]

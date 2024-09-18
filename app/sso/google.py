@@ -6,13 +6,13 @@ import httpx
 
 from app.sso.base import (
     DiscoveryDocument,
-    SSOProvider,
+    SSOBase,
 )
 from app.sso.exceptions import SSOLoginError
 from app.sso.schemas import OpenID
 
 
-class GoogleSSO(SSOProvider):
+class GoogleSSO(SSOBase):
     """Class providing login via Google OAuth."""
 
     discovery_url = (

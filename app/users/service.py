@@ -1,5 +1,6 @@
 import random
 import secrets
+import string
 import uuid
 from typing import assert_never
 
@@ -15,10 +16,10 @@ from app.schemas import BackendOK, backend_ok
 from app.security.hashing import crypt_ctx
 from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
-from app.sso.base import SSOProvider
+from app.sso.base import SSOBase
 from app.sso.schemas import SSOCallback
 from app.sso_accounts.schemas import SSOAccountRead, SSOAccountCreate
-from app.users.auth import AuthorizationForm
+from app.users.forms import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
     UserEmailNotFound,
@@ -26,11 +27,11 @@ from app.users.exceptions import (
     InvalidToken,
     InvalidTokenType,
     UserNotFound,
-    CodeExpired,
     WrongCode,
     SSOAlreadyAssociatedThisUser,
     SSOAlreadyAssociatedAnotherUser,
     TelegramNotConnected,
+    EmailNotSet,
 )
 from app.users.schemas import (
     UserUpdate,
@@ -84,7 +85,10 @@ class UserService(Service):
             first_name=first_name,
             last_name=last_name,
         )
-        await self.send_code(user)
+        try:
+            await self.send_code(user, NotifyVia.email)
+        except EmailNotSet:
+            pass
         return user
 
     async def get(self, user_id: ID) -> UserRead | None:
@@ -110,7 +114,11 @@ class UserService(Service):
         user: UserRead,
     ) -> BearerToken:
         access_token = encode_jwt(
-            access_params, subject=str(user.id), email=user.email
+            access_params,
+            subject=str(user.id),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
         )
         refresh_token = encode_jwt(refresh_params, subject=str(user.id))
         return BearerToken(
@@ -151,20 +159,27 @@ class UserService(Service):
             case GrantType.password:
                 user = await self.authorize_password(form)
             case GrantType.refresh_token:
+                assert form.refresh_token
                 user = await self.refresh_token(form.refresh_token)
             case _:
                 assert_never(form.grant_type)
         return self.create_token(user)
 
-    async def send_code(self, user: UserRead, via: NotifyVia) -> BackendOK:
+    async def create_code(self, user: UserRead) -> str:
         code = "".join(
-            random.choices("0123456789", k=settings.auth.code_length)
+            random.choices(string.digits, k=settings.auth.code_length)
         )
         await self.cache.add(
             f"codes:{user.id}", code, expire=settings.auth.code_expire
         )
+        return code
+
+    async def send_code(self, user: UserRead, via: NotifyVia) -> BackendOK:
+        code = await self.create_code(user)
         match via:
             case NotifyVia.email:
+                if user.email is None:
+                    raise EmailNotSet()
                 await self.notifications.send_email(
                     user,
                     "Your verification code",
@@ -187,7 +202,7 @@ class UserService(Service):
     async def validate_code(self, user: UserRead, code: str) -> BackendOK:
         user_code = await self.cache.get(f"codes:{user.id}", cast=str)
         if user_code is None:
-            raise CodeExpired()
+            raise WrongCode()
         if not secrets.compare_digest(user_code, code):
             raise WrongCode()
         await self.cache.delete(f"codes:{user.id}")
@@ -212,7 +227,7 @@ class UserService(Service):
 
     @staticmethod
     async def get_data_from_provider(
-        provider: SSOProvider, callback: SSOCallback
+        provider: SSOBase, callback: SSOCallback
     ) -> SSOAccountCreate:
         sso_token = await provider.login(callback)
         user_info = await provider.get_userinfo()
@@ -229,6 +244,7 @@ class UserService(Service):
         account = await self.uow.sso_accounts.get_by_account(
             data.provider, data.account_id
         )
+        user = None
         data_dict = data.model_dump()
         if account:
             account = await self.uow.sso_accounts.update(
@@ -236,12 +252,13 @@ class UserService(Service):
             )
             user = await self.get_one(account.user_id)
         else:
-            user = await self.get_by_email(data["email"])  # type: ignore[assignment]
+            if data.email:
+                user = await self.get_by_email(data.email)
             if not user:
                 user = await self.register(
-                    first_name=data["first_name"],
-                    last_name=data["last_name"],
-                    email=data["email"],
+                    first_name=data.first_name,
+                    last_name=data.last_name,
+                    email=data.email,
                     is_verified=True,
                 )
             await self.uow.sso_accounts.create(user_id=user.id, **data_dict)

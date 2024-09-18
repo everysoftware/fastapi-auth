@@ -24,6 +24,7 @@ class MailMessage(BackendBase):
 
         msg = MIMEMultipart("alternative")
         msg["From"] = settings.mail.smtp_from_name
+        assert self.user.email is not None
         msg["To"] = self.user.email
         msg["Subject"] = self.subject
 

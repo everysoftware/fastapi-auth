@@ -5,7 +5,7 @@ from starlette import status
 
 from app.schemas import BackendErrorResponse
 from app.sso_accounts.router import router as sso_accounts_router
-from app.users.dependencies import get_user
+from app.users.dependencies import get_user, auth_schemes
 from app.users.router import (
     auth_router,
     user_router,
@@ -13,7 +13,9 @@ from app.users.router import (
     notify_router,
 )
 
-protected_router = APIRouter(dependencies=[Depends(get_user)])
+protected_router = APIRouter(
+    dependencies=[Depends(get_user), *[Depends(a) for a in auth_schemes]]
+)
 protected_router.include_router(notify_router)
 protected_router.include_router(user_router)
 protected_router.include_router(sso_accounts_router)

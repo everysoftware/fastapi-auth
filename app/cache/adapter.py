@@ -1,5 +1,5 @@
 import json
-from typing import Any, cast as _cast
+from typing import Any, cast as _cast, overload, Literal
 
 from redis.asyncio import Redis
 
@@ -12,22 +12,38 @@ class CacheAdapter:
         self.client = redis
         self.key = key
 
-    async def add[T](
-        self, key: str, value: T, expire: int | None = None
+    async def add(
+        self, key: str, value: Any, expire: int | None = None
     ) -> str:
         json_str = json.dumps(value, ensure_ascii=True)
         await self.client.set(f"{self.key}:{key}", json_str, ex=expire)
         return json_str
 
+    @overload
     async def get[T](
         self,
         key: str,
-        cast: type[T] = Any,
-    ) -> T | None:
+        cast: Literal[None] = None,
+    ) -> Any: ...
+
+    @overload
+    async def get[T](
+        self,
+        key: str,
+        cast: type[T],
+    ) -> T | None: ...
+
+    async def get[T](
+        self,
+        key: str,
+        cast: type[T] | None = None,
+    ) -> Any | T | None:
         value = await self.client.get(f"{self.key}:{key}")
         if value is None:
             return None
-        return _cast(cast, json.loads(value))
+        if cast is None:
+            return value
+        return _cast(cast, json.loads(value))  # type: ignore[valid-type]
 
     async def keys(self, pattern: str) -> set[str]:
         keys = await self.client.keys(f"{self.key}:{pattern}")
