@@ -1,21 +1,14 @@
-from typing import assert_never, Annotated
-
-from fastapi import Depends
+from typing import assert_never
 
 from app.config import settings
-from app.db.types import ID
-from app.dependencies import UOWDep
-from app.oidc.base import SSOProvider
-from app.oidc.google import GoogleSSO
-from app.oidc.schemas import SSOName
-from app.oidc.yandex import YandexSSO
+from app.sso.base import SSOBase
 from app.sso.exceptions import SSODisabled
-from app.sso.schemas import SSOAccountRead
-from app.sso.service import SSOAccountService
-from app.users.dependencies import UserServiceDep
+from app.sso.google import GoogleSSO
+from app.sso.schemas import SSOName
+from app.sso.yandex import YandexSSO
 
 
-def get_sso(provider: SSOName) -> SSOProvider:
+def get_sso(provider: SSOName) -> SSOBase:
     match provider:
         case SSOName.google:
             if not settings.auth.google_sso_enabled:
@@ -33,20 +26,3 @@ def get_sso(provider: SSOName) -> SSOProvider:
             )
         case _:
             assert_never(provider)
-
-
-def get_sso_account_service(
-    uow: UOWDep, users: UserServiceDep
-) -> SSOAccountService:
-    return SSOAccountService(uow, users)
-
-
-SSOAccountServiceDep = Annotated[
-    SSOAccountService, Depends(get_sso_account_service)
-]
-
-
-async def get_account(
-    service: SSOAccountServiceDep, account_id: ID
-) -> SSOAccountRead:
-    return await service.get_one(account_id)

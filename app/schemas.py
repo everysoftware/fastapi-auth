@@ -9,3 +9,11 @@ class BackendBase(BaseModel):
 class BackendErrorResponse(BackendBase):
     msg: str
     code: str
+
+
+class BackendOK(BackendErrorResponse):
+    msg: str = "Success"
+    code: str = "ok"
+
+
+backend_ok = BackendOK()

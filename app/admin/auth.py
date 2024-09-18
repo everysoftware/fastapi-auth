@@ -1,12 +1,10 @@
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
-from app.db.connection import async_session_factory
-from app.db.uow import UOW
 from app.exceptions import BackendError
-from app.users.auth import AuthorizationForm
+from app.users.forms import AuthorizationForm
+from app.users.lifespan import users_ctx
 from app.users.schemas import GrantType
-from app.users.service import UserService
 
 
 class AdminAuth(AuthenticationBackend):
@@ -19,10 +17,9 @@ class AdminAuth(AuthenticationBackend):
         )
 
         # Validate username/password credentials
-        async with UOW(async_session_factory) as uow:
-            users = UserService(uow)
+        async with users_ctx() as users:
             try:
-                user = await users.process_password_grant(form)
+                user = await users.authorize_password(form)
             except BackendError:
                 return False
             if not user or not user.is_superuser:
@@ -45,8 +42,7 @@ class AdminAuth(AuthenticationBackend):
         if not token:
             return False
 
-        async with UOW(async_session_factory) as uow:
-            users = UserService(uow)
+        async with users_ctx() as users:
             try:
                 user = await users.validate_token(token)
             except BackendError:

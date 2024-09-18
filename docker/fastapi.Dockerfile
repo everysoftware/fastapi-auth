@@ -46,6 +46,8 @@ WORKDIR $APP_PATH
 COPY ./$APP_NAME ./$APP_NAME
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
+COPY ./templates ./templates
+COPY ./certs ./certs
 
 COPY ./docker/entrypoint-dev.sh /entrypoint-dev.sh
 RUN chmod +x /entrypoint-dev.sh
@@ -69,12 +71,14 @@ RUN python -m pip install -r requirements.txt
 
 # Set environment
 ENV APP_NAME=$APP_NAME
-ENV NO_ENV_FILE=1
+ENV ENVIRONMENT_SET=1
 
 # Copy files
 COPY ./$APP_NAME ./$APP_NAME
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
+COPY ./templates ./templates
+COPY ./certs ./certs
 
 # Entrypoint script
 COPY ./docker/entrypoint.sh /entrypoint.sh

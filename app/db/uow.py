@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSessionTransaction,
 )
 
-from app.sso.repositories import SSOAccountRepository
+from app.sso_accounts.repositories import SSOAccountRepository
 from app.users.repositories import UserRepository
 
 

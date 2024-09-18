@@ -1,29 +1,43 @@
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any
 
-from fastapi import Depends, APIRouter, Query, Form
-from pydantic import AnyHttpUrl
+from fastapi import Depends, APIRouter, Query
+from pydantic import EmailStr
 from starlette import status
 from starlette.requests import Request
+from starlette.responses import RedirectResponse
 
 from app.db.schemas import PageParams, Page
-from app.oidc.base import SSOProvider
-from app.oidc.schemas import SSOCallback
+from app.schemas import BackendOK, backend_ok
+from app.sso.base import SSOBase
 from app.sso.dependencies import get_sso
-from app.sso.schemas import URLResponse
-from app.users.auth import AuthorizationForm
-from app.users.constants import CALLBACK_URL_EXAMPLE
+from app.sso.forms import SSOProviderOAuth2Form, SSOProviderAuthorize
+from app.sso.schemas import SSOCallback
+from app.sso_accounts.schemas import (
+    URLResponse,
+    SSOAccountRead,
+    SSOAccountCreate,
+)
+from app.telegram.dependencies import bot, get_telegram_sso
+from app.telegram.schemas import TelegramAuthData
+from app.telegram.sso import TelegramSSO
+from app.templating import templates
+from app.users.constants import CALLBACK_WARNING
 from app.users.dependencies import (
     UserServiceDep,
     UserDep,
-    get_user,
-    GetCurrentUser,
+    get_user_by_id,
+    Requires,
 )
+from app.users.forms import AuthorizationForm
 from app.users.schemas import (
     UserCreate,
     UserRead,
     UserUpdate,
     BearerToken,
     Role,
+    NotifyVia,
+    ResetPassword,
+    VerifyToken,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -35,15 +49,18 @@ async def register(
     user: UserCreate,
 ) -> UserRead:
     return await service.register(
-        user.first_name, user.last_name, user.email, user.password
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        password=user.password,
     )
 
 
 @auth_router.post(
     "/token",
     description="""Grant types:
-    **Password grant** requires username and password.
-    **Refresh token grant** requires refresh token.
+- **Password grant** requires username and password.
+- **Refresh token grant** requires refresh token.
     """,
     status_code=status.HTTP_200_OK,
 )
@@ -54,47 +71,135 @@ async def get_token(
     return await service.authorize(form)
 
 
+@auth_router.post(
+    "/reset-password-request",
+    status_code=status.HTTP_200_OK,
+)
+async def reset_password_request(
+    service: UserServiceDep, email: EmailStr
+) -> BackendOK:
+    await service.send_code(via=NotifyVia.email, email=email)
+    return backend_ok
+
+
+@auth_router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+)
+async def reset_password(
+    service: UserServiceDep, reset: ResetPassword
+) -> BackendOK:
+    await service.reset_password(reset)
+    return backend_ok
+
+
 sso_router = APIRouter(prefix="/sso", tags=["SSO"])
 
 
 @sso_router.get(
-    "/{provider}/login",
-    description="""Redirects user to the provider's login page.
+    "/telegram/login",
+    description="""
+Redirects user to the Telegram login page.
 
-    SSO flow:
-    1. Frontend requests provider login URL (GET api.example.com/sso/{provider}/login) and redirects user to it.
-    2. Provider redirects user back to the redirect URI with authorization code (e.g. GET example.com/sso-callback).
-    3. Frontend sends the code to the backend to obtain token (POST api.example.com/sso/{provider}/token).
-    4. Frontend uses the token to authenticate the user (e.g. GET api.example.com/users/me).
-    """,
+## How to test
+
+Telegram Redirect URI: `http://localhost:8000/api/v1/sso/telegram/callback`
+
+Authorization URL: `http://localhost:8000/api/v1/sso/telegram/login?redirect_uri=http://localhost:8000/api/v1/sso/telegram/callback`
+""",
+    status_code=status.HTTP_303_SEE_OTHER,
+)
+async def telegram_login(
+    provider: Annotated[TelegramSSO, Depends(get_telegram_sso)],
+    params: Annotated[SSOProviderAuthorize, Depends()],
+) -> Any:
+    login_url = await provider.get_login_url(params.redirect_uri)
+    if not params.redirect:
+        return URLResponse(url=login_url)
+    return RedirectResponse(
+        url=login_url, status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@sso_router.post("/telegram/token", status_code=status.HTTP_200_OK)
+async def telegram_token(
+    provider: Annotated[TelegramSSO, Depends(get_telegram_sso)],
+    service: Annotated[UserServiceDep, Depends()],
+    auth_data: TelegramAuthData,
+) -> BearerToken:
+    open_id = await provider.validate_auth_data(auth_data)
+    account = SSOAccountCreate(
+        **open_id.model_dump(exclude={"id"}),
+        account_id=open_id.id,
+    )
+    return await service.authorize_sso(account)
+
+
+@sso_router.get(
+    "/telegram/callback",
+    status_code=status.HTTP_200_OK,
+    description=CALLBACK_WARNING,
+)
+async def telegram_callback(request: Request) -> Any:
+    bot_me = await bot.me()
+    return templates.TemplateResponse(
+        "telegram_login.html",
+        {
+            "request": request,
+            "bot_username": bot_me.username,
+            "redirect_uri": request.url_for("telegram_view_data"),
+        },
+    )
+
+
+@sso_router.get(
+    "/telegram/view",
+    status_code=status.HTTP_200_OK,
+    description=CALLBACK_WARNING,
+)
+def telegram_view_data(
+    auth_data: Annotated[TelegramAuthData, Depends()],
+) -> TelegramAuthData:
+    return auth_data
+
+
+@sso_router.post("/telegram/connect", status_code=status.HTTP_201_CREATED)
+async def telegram_connect(
+    service: UserServiceDep,
+    provider: Annotated[TelegramSSO, Depends(get_telegram_sso)],
+    user: UserDep,
+    auth_data: Annotated[TelegramAuthData, Depends()],
+) -> SSOAccountRead:
+    open_id = await provider.validate_auth_data(auth_data)
+    account = SSOAccountCreate(
+        **open_id.model_dump(exclude={"id"}),
+        account_id=open_id.id,
+    )
+    return await service.connect_sso(user, account)
+
+
+@sso_router.get(
+    "/{provider}/login",
+    description="""
+Redirects user to the provider's login page.
+
+## How to test
+
+Google Redirect URI: `http://localhost:8000/api/v1/sso/google/callback`
+
+Yandex Redirect URI: `http://localhost:8000/api/v1/sso/yandex/callback`""",
     status_code=status.HTTP_303_SEE_OTHER,
     tags=["SSO"],
 )
 async def sso_login(
-    service: UserServiceDep,
-    provider: Annotated[SSOProvider, Depends(get_sso)],
-    redirect_uri: AnyHttpUrl = Query(
-        openapi_examples={
-            "Test example": {
-                "summary": "",
-                "value": CALLBACK_URL_EXAMPLE,
-            }
-        }
-    ),
-    state: str = Query(
-        openapi_examples={
-            "Test example": {"summary": "", "value": "test_state"}
-        }
-    ),
-    redirect: bool = True,
+    provider: Annotated[SSOBase, Depends(get_sso)],
+    params: Annotated[SSOProviderAuthorize, Depends()],
 ) -> Any:
-    login_url = await service.get_consent_url(
-        provider,
-        redirect_uri,
-        state,
+    login_url = await provider.get_login_url(
+        redirect_uri=params.redirect_uri, state=params.state
     )
-    if redirect:
-        return provider.get_login_redirect(login_url)
+    if params.redirect:
+        return provider.redirect(login_url)
     return URLResponse(url=login_url)
 
 
@@ -106,24 +211,25 @@ async def sso_login(
 )
 async def sso_token(
     service: UserServiceDep,
-    provider: Annotated[SSOProvider, Depends(get_sso)],
-    grant_type: Literal["authorization_code"] = Form(),
-    code: str = Form(),
-    redirect_uri: AnyHttpUrl = Form(examples=[CALLBACK_URL_EXAMPLE]),
+    provider: Annotated[SSOBase, Depends(get_sso)],
+    form: Annotated[SSOProviderOAuth2Form, Depends()],
 ) -> BearerToken:
     callback = SSOCallback(
-        grant_type=grant_type, code=code, redirect_uri=redirect_uri
+        code=form.code,
+        redirect_uri=form.redirect_uri,
     )
-    return await service.sso_token(provider, callback)
+    data = await service.prepare_sso_account(provider, callback)
+    return await service.authorize_sso(data)
 
 
 @sso_router.get(
     "/{provider}/callback",
     status_code=status.HTTP_200_OK,
+    description=CALLBACK_WARNING,
     tags=["SSO"],
 )
 async def sso_callback(
-    provider: Annotated[SSOProvider, Depends(get_sso)],
+    provider: Annotated[SSOBase, Depends(get_sso)],
     request: Request,
     code: str,
     state: str,
@@ -138,6 +244,21 @@ async def sso_callback(
     }
 
 
+@sso_router.post("/{provider}/connect", status_code=status.HTTP_201_CREATED)
+async def connect(
+    service: UserServiceDep,
+    provider: Annotated[SSOBase, Depends(get_sso)],
+    user: UserDep,
+    form: Annotated[SSOProviderOAuth2Form, Depends()],
+) -> SSOAccountRead:
+    callback = SSOCallback(
+        code=form.code,
+        redirect_uri=form.redirect_uri,
+    )
+    data = await service.prepare_sso_account(provider, callback)
+    return await service.connect_sso(user, data)
+
+
 user_router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -148,9 +269,12 @@ def me(user: UserDep) -> UserRead:
 
 @user_router.patch("/me", status_code=status.HTTP_200_OK)
 async def patch(
-    service: UserServiceDep, user: UserDep, update: UserUpdate
+    service: UserServiceDep,
+    user: UserDep,
+    update: UserUpdate,
+    verify_token: str | None = Query(None),
 ) -> UserRead:
-    return await service.update(user, update)
+    return await service.update(user, update, verify_token)
 
 
 @user_router.delete("/me", status_code=status.HTTP_200_OK)
@@ -158,47 +282,71 @@ async def delete(service: UserServiceDep, user: UserDep) -> UserRead:
     return await service.delete(user)
 
 
-su_router = APIRouter(
+notify_router = APIRouter(prefix="/notify", tags=["Notifications"])
+
+
+@notify_router.post("/code", status_code=status.HTTP_200_OK)
+async def send_code(
+    service: UserServiceDep,
+    user: UserDep,
+    via: NotifyVia = NotifyVia.email,
+) -> BackendOK:
+    await service.send_code(
+        via=via, email=user.email, telegram_id=user.telegram_id
+    )
+    return backend_ok
+
+
+@notify_router.get("/code/verify", status_code=status.HTTP_200_OK)
+async def verify_code(
+    service: UserServiceDep,
+    user: UserDep,
+    code: str,
+) -> VerifyToken:
+    return await service.verify_code(user, code)
+
+
+admin_router = APIRouter(
     tags=["Admin"],
-    dependencies=[Depends(GetCurrentUser(requires_superuser=True))],
+    dependencies=[Depends(Requires(is_superuser=True))],
 )
 
 
-@su_router.get("/{user_id}")
-def get_by_id(user: Annotated[UserRead, Depends(get_user)]) -> UserRead:
+@admin_router.get("/{user_id}")
+def get_by_id(user: Annotated[UserRead, Depends(get_user_by_id)]) -> UserRead:
     return user
 
 
-@su_router.patch("/{user_id}")
+@admin_router.patch("/{user_id}")
 async def update_by_id(
     service: UserServiceDep,
-    user: Annotated[UserRead, Depends(get_user)],
+    user: Annotated[UserRead, Depends(get_user_by_id)],
     update: UserUpdate,
 ) -> UserRead:
     return await service.update(user, update)
 
 
-@su_router.delete("/{user_id}")
+@admin_router.delete("/{user_id}")
 async def delete_by_id(
-    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user)]
+    service: UserServiceDep, user: Annotated[UserRead, Depends(get_user_by_id)]
 ) -> UserRead:
     return await service.delete(user)
 
 
-@su_router.get("/")
+@admin_router.get("/")
 async def get_many(
     service: UserServiceDep, params: Annotated[PageParams, Depends()]
 ) -> Page[UserRead]:
     return await service.get_many(params)
 
 
-@su_router.post("/{user_id}/grant")
+@admin_router.post("/{user_id}/grant")
 async def grant(
     service: UserServiceDep,
-    user: Annotated[UserRead, Depends(get_user)],
+    user: Annotated[UserRead, Depends(get_user_by_id)],
     role: Role = Role.user,
 ) -> UserRead:
     return await service.grant(user, role)
 
 
-user_router.include_router(su_router)
+user_router.include_router(admin_router)

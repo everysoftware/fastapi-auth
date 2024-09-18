@@ -6,7 +6,7 @@ from starlette.testclient import TestClient
 
 from app import app
 from app.db.uow import UOW
-from app.dependencies import get_uow
+from app.db.dependencies import get_uow
 from app.users.schemas import UserCreate, UserRead, BearerToken
 from tests.conftest import test_factory
 

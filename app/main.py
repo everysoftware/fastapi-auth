@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.admin.main import app as admin_app
+from app.cache.lifespan import ping_redis
 from app.config import settings
 from app.exceptions import BackendError
 from app.logging import logger
@@ -18,6 +19,7 @@ from app.users.lifespan import register_default_users
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup tasks
     await register_default_users()
+    await ping_redis()
     yield
     # Shutdown tasks
     # ...

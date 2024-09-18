@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 from fastapi.exceptions import RequestValidationError
 from starlette import status
 
@@ -39,3 +41,9 @@ class UnexpectedError(BackendError):
 
 class ValidationError(RequestValidationError):
     pass
+
+
+def raise_val_error(msg: str) -> NoReturn:
+    raise ValidationError(
+        [{"loc": "request", "msg": msg, "type": "invalid_request"}]
+    )

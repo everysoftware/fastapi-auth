@@ -1,17 +1,12 @@
-import datetime
-import uuid
 from enum import StrEnum, auto
 from typing import Literal
 
 from pydantic import (
     Field,
     EmailStr,
-    ConfigDict,
-    field_serializer,
     computed_field,
 )
 
-from app.config import settings
 from app.db.schemas import IDModel, TimestampModel
 from app.schemas import BackendBase
 
@@ -24,6 +19,7 @@ class UserRead(UserBase, IDModel, TimestampModel):
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
+    telegram_id: int | None = None
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
@@ -37,7 +33,11 @@ class UserRead(UserBase, IDModel, TimestampModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def display_name(self) -> str:
-        return f"{self.first_name} {self.last_name}"
+        if self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return self.first_name
+        return ""
 
 
 class UserCreate(UserBase):
@@ -52,6 +52,7 @@ class UserUpdate(BackendBase):
     last_name: str | None = None
     email: EmailStr | None = None
     password: str | None = None
+    is_verified: bool | None = None
 
 
 # AUTHORIZATION
@@ -60,6 +61,7 @@ class UserUpdate(BackendBase):
 class TokenType(StrEnum):
     access = auto()
     refresh = auto()
+    verify = auto()
 
 
 class GrantType(StrEnum):
@@ -67,36 +69,13 @@ class GrantType(StrEnum):
     refresh_token = auto()
 
 
-class TokenParams(BackendBase):
-    issuer: str = settings.auth.jwt_issuer
-    audience: list[str] = settings.auth.jwt_audience
-    algorithm: str = settings.auth.jwt_algorithm
-    private_key: str = settings.auth.jwt_private_key.read_text()
-    public_key: str = settings.auth.jwt_public_key.read_text()
-    type: TokenType
-    expires_in: datetime.timedelta
-
-
-class JWTClaims(BackendBase):
-    jti: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    iss: str
-    aud: list[str]
-    typ: TokenType
-    sub: str
-    email: EmailStr | None = None
-    iat: datetime.datetime
-    nbf: datetime.datetime
-    exp: datetime.datetime
-
-    @field_serializer("iat", "exp", "nbf", mode="plain")
-    def datetime_to_timestamp(self, value: datetime.datetime) -> int:
-        return int(value.timestamp())
-
-    model_config = ConfigDict(extra="allow")
+class NotifyVia(StrEnum):
+    email = auto()
+    telegram = auto()
 
 
 class BearerToken(BackendBase):
-    token_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    token_id: str
     access_token: str
     refresh_token: str
     token_type: Literal["bearer"] = "bearer"
@@ -108,3 +87,14 @@ class BearerToken(BackendBase):
 class Role(StrEnum):
     user = auto()
     superuser = auto()
+
+
+class VerifyToken(BackendBase):
+    verify_token: str
+    expires_in: int
+
+
+class ResetPassword(BackendBase):
+    email: str
+    code: str
+    password: str

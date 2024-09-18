@@ -38,30 +38,42 @@ class InvalidTokenType(Unauthorized):
     error_code = "invalid_token_type"
 
 
+class NoPermission(BackendError):
+    message = "You don't have permission to do this"
+    error_code = "no_permission"
+    status_code = status.HTTP_403_FORBIDDEN
+
+
 class UserNotFound(Unauthorized):
     message = "User with this id not found"
     error_code = "user_not_found"
 
 
-class SuperuserRightsRequired(BackendError):
-    message = "You must be superuser to do this"
-    error_code = "not_superuser"
-    status_code = status.HTTP_403_FORBIDDEN
+class WrongCode(BackendError):
+    message = "Wrong code"
+    error_code = "wrong_code"
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
-class PasswordSettingRequired(BackendError):
-    message = "You must set password to do this"
-    error_code = "password_not_set"
-    status_code = status.HTTP_403_FORBIDDEN
+class SSOAlreadyAssociatedThisUser(BackendError):
+    message = "SSO account is already associated with this user"
+    error_code = "sso_already_associated"
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
-class VerificationRequired(BackendError):
-    message = "You must set password to do this"
-    error_code = "not_verified"
-    status_code = status.HTTP_403_FORBIDDEN
+class SSOAlreadyAssociatedAnotherUser(BackendError):
+    message = "SSO account is already associated with another user"
+    error_code = "sso_already_associated"
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
-class UserDisabled(BackendError):
-    message = "User is disabled"
-    error_code = "user_disabled"
-    status_code = status.HTTP_403_FORBIDDEN
+class UserTelegramNotFound(BackendError):
+    message = "User with this telegram id not found"
+    error_code = "telegram_id_not_found"
+    status_code = status.HTTP_400_BAD_REQUEST
+
+
+class VerifyTokenRequired(BackendError):
+    message = "Verify token required"
+    error_code = "verify_token_required"
+    status_code = status.HTTP_400_BAD_REQUEST

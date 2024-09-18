@@ -1,6 +1,6 @@
 # Import models for alembic
 
-from app.sso.models import SSOAccountOrm
+from app.sso_accounts.models import SSOAccountOrm
 from app.users.models import UserOrm
 from .base import BaseOrm
 
