@@ -19,6 +19,7 @@ class UserRead(UserBase, IDModel, TimestampModel):
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
+    telegram_id: int | None = None
     hashed_password: str | None = Field(None, exclude=True)
     is_active: bool
     is_superuser: bool
@@ -51,6 +52,7 @@ class UserUpdate(BackendBase):
     last_name: str | None = None
     email: EmailStr | None = None
     password: str | None = None
+    is_verified: bool | None = None
 
 
 # AUTHORIZATION
@@ -59,6 +61,7 @@ class UserUpdate(BackendBase):
 class TokenType(StrEnum):
     access = auto()
     refresh = auto()
+    verify = auto()
 
 
 class GrantType(StrEnum):
@@ -84,3 +87,14 @@ class BearerToken(BackendBase):
 class Role(StrEnum):
     user = auto()
     superuser = auto()
+
+
+class VerifyToken(BackendBase):
+    verify_token: str
+    expires_in: int
+
+
+class ResetPassword(BackendBase):
+    email: str
+    code: str
+    password: str

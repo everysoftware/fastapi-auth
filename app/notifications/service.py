@@ -28,11 +28,5 @@ class NotificationService(Service):
             )
 
     @staticmethod
-    async def send_telegram(account_id: str, text: str) -> None:
-        if settings.auth.telegram_sso_enabled:
-            await bot.send_message(int(account_id), text)
-        else:
-            warnings.warn(
-                "Telegram SSO is disabled. Set TELEGRAM_SSO_ENABLED=True to enable sending Telegram messages.",
-                UserWarning,
-            )
+    async def send_telegram(telegram_id: int, text: str) -> None:
+        await bot.send_message(telegram_id, text)

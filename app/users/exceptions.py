@@ -67,13 +67,13 @@ class SSOAlreadyAssociatedAnotherUser(BackendError):
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class TelegramNotConnected(BackendError):
-    message = "Telegram account is not connected"
-    error_code = "telegram_not_connected"
+class UserTelegramNotFound(BackendError):
+    message = "User with this telegram id not found"
+    error_code = "telegram_id_not_found"
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class EmailNotSet(BackendError):
-    message = "Email is not set"
-    error_code = "email_not_set"
+class VerifyTokenRequired(BackendError):
+    message = "Verify token required"
+    error_code = "verify_token_required"
     status_code = status.HTTP_400_BAD_REQUEST

@@ -1,3 +1,4 @@
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.requests import Request
 
@@ -17,11 +18,8 @@ def get_from_headers(request: Request) -> str | None:
     return param
 
 
-class BackendAuth:
+class BackendAuth(OAuth2PasswordBearer):
     parsers = [get_from_cookies, get_from_headers]
-
-    def __init__(self, *, auto_error: bool = True):
-        self.auto_error = auto_error
 
     async def __call__(self, request: Request) -> str | None:
         for parser in self.parsers:

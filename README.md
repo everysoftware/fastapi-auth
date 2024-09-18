@@ -1,18 +1,16 @@
-# FastAPI Template
+# FastAPI Authorization Server
 
-A production-ready template for FastAPI projects ⚡
+Powerful authorization server with JWT, SSO, RBAC, etc. 🔥
 
 ## Features
 
-Main features of this template:
+Main features:
 
 - Secure **authorization** with JWT+RSA+Refresh Tokens
-- Extendable **single sign-on** via Google & Yandex
+- Extendable **single sign-on** via Google, Yandex & Telegram
+- **Confirmation of actions** via Email & Telegram
 - Extendable **role-based access control** (supports user & superuser)
 - Powerful **user** management
-- Offset **pagination** with sorting
-- Well-designed **architecture** & **file-structure** with SOLID & patterns applying
-- Fast **deployment** with Docker, Makefile, gunicorn & pre-commit
 - **Test framework** for faster test-writing with examples
 
 ## Installation
@@ -20,7 +18,7 @@ Main features of this template:
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/everysoftware/fastapi-template
+git clone https://github.com/everysoftware/fastapi-auth
 ```
 
 2. Generate RSA keys:
@@ -37,4 +35,4 @@ openssl rsa -in certs/private.pem -pubout -out certs/public.pem
 make up
 ```
 
-**Made with love ❤️**
+**Made with love by Ivan Stasevich ❤️**

@@ -12,7 +12,7 @@ class BackendErrorResponse(BackendBase):
 
 
 class BackendOK(BackendErrorResponse):
-    msg: str = "OK"
+    msg: str = "Success"
     code: str = "ok"
 
 

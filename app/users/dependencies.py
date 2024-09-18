@@ -5,7 +5,6 @@ from fastapi.security import (
     OAuth2AuthorizationCodeBearer,
     APIKeyHeader,
     APIKeyCookie,
-    OAuth2PasswordBearer,
 )
 
 from app.db.types import ID
@@ -16,42 +15,41 @@ from app.users.schemas import UserRead
 from app.users.service import UserService
 
 UserServiceDep = Annotated[UserService, Depends()]
-
-auth_schemes = [
-    APIKeyHeader(
-        name=TOKEN_HEADER_NAME,
-        scheme_name="BearerHeader",
-        auto_error=False,
-    ),
-    APIKeyCookie(
-        name=TOKEN_COOKIE_NAME,
-        scheme_name="BearerCookie",
-        auto_error=False,
-    ),
-    OAuth2PasswordBearer(
-        tokenUrl="auth/token", scheme_name="Password", auto_error=False
-    ),
-    OAuth2AuthorizationCodeBearer(
-        authorizationUrl="sso/google/login",
-        tokenUrl="sso/google/token",
-        refreshUrl="auth/token",
-        scheme_name="GoogleOAuth",
-        auto_error=False,
-    ),
-    OAuth2AuthorizationCodeBearer(
-        authorizationUrl="sso/yandex/login",
-        tokenUrl="sso/yandex/token",
-        refreshUrl="auth/token",
-        scheme_name="YandexOAuth",
-        auto_error=False,
-    ),
-]
-auth = BackendAuth()
+auth = BackendAuth(
+    tokenUrl="auth/token", scheme_name="Password", auto_error=False
+)
+google_auth = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="sso/google/login",
+    tokenUrl="sso/google/token",
+    refreshUrl="auth/token",
+    scheme_name="GoogleOAuth",
+    auto_error=False,
+)
+yandex_auth = OAuth2AuthorizationCodeBearer(
+    authorizationUrl="sso/yandex/login",
+    tokenUrl="sso/yandex/token",
+    refreshUrl="auth/token",
+    scheme_name="YandexOAuth",
+    auto_error=False,
+)
+header_auth = APIKeyHeader(
+    name=TOKEN_HEADER_NAME,
+    scheme_name="BearerHeader",
+    auto_error=False,
+)
+cookie_auth = APIKeyCookie(
+    name=TOKEN_COOKIE_NAME,
+    scheme_name="BearerCookie",
+    auto_error=False,
+)
 
 
 def get_token(
     token: Annotated[str, Depends(auth)],
-    # SWAGGER SCHEMAS
+    _google_token: Annotated[str | None, Depends(google_auth)],
+    _yandex_token: Annotated[str | None, Depends(yandex_auth)],
+    _header_token: Annotated[str | None, Depends(header_auth)],
+    _cookie_auth: Annotated[str | None, Depends(cookie_auth)],
 ) -> str:
     return token
 

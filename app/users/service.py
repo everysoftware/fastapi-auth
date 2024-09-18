@@ -11,15 +11,15 @@ from app.config import settings
 from app.db.dependencies import UOWDep
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
+from app.exceptions import raise_val_error
 from app.notifications.dependencies import NotificationServiceDep
-from app.schemas import BackendOK, backend_ok
+from app.notifications.service import NotificationService
 from app.security.hashing import crypt_ctx
 from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
 from app.sso.base import SSOBase
 from app.sso.schemas import SSOCallback
 from app.sso_accounts.schemas import SSOAccountRead, SSOAccountCreate
-from app.users.forms import AuthorizationForm
 from app.users.exceptions import (
     UserAlreadyExists,
     UserEmailNotFound,
@@ -30,9 +30,10 @@ from app.users.exceptions import (
     WrongCode,
     SSOAlreadyAssociatedThisUser,
     SSOAlreadyAssociatedAnotherUser,
-    TelegramNotConnected,
-    EmailNotSet,
+    UserTelegramNotFound,
+    VerifyTokenRequired,
 )
+from app.users.forms import AuthorizationForm
 from app.users.schemas import (
     UserUpdate,
     UserRead,
@@ -41,16 +42,19 @@ from app.users.schemas import (
     TokenType,
     GrantType,
     NotifyVia,
+    ResetPassword,
+    VerifyToken,
 )
 from app.users.tokens import (
     access_params,
     refresh_params,
     get_token_params,
+    verify_params,
 )
 
 
 class UserService(Service):
-    notifications: NotificationServiceDep
+    notifications: NotificationService
 
     def __init__(
         self,
@@ -65,11 +69,19 @@ class UserService(Service):
     async def get_by_email(self, email: str) -> UserRead | None:
         return await self.uow.users.get_by_email(email)
 
+    async def get_one_by_email(self, email: str) -> UserRead:
+        user = await self.get_by_email(email)
+        if not user:
+            raise UserEmailNotFound()
+        return user
+
     async def register(
         self,
+        *,
         first_name: str | None = None,
         last_name: str | None = None,
         email: str | None = None,
+        telegram_id: int | None = None,
         password: str | None = None,
         is_verified: bool = False,
         is_superuser: bool = False,
@@ -84,11 +96,10 @@ class UserService(Service):
             is_superuser=is_superuser,
             first_name=first_name,
             last_name=last_name,
+            telegram_id=telegram_id,
         )
-        try:
-            await self.send_code(user, NotifyVia.email)
-        except EmailNotSet:
-            pass
+        if not is_verified:
+            await self.send_code(via=NotifyVia.email, email=email)
         return user
 
     async def get(self, user_id: ID) -> UserRead | None:
@@ -100,10 +111,28 @@ class UserService(Service):
             raise UserNotFound()
         return user
 
-    async def update(self, user: UserRead, update: UserUpdate) -> UserRead:
+    async def update(
+        self,
+        user: UserRead,
+        update: UserUpdate,
+        verify_token: str | None = None,
+    ) -> UserRead:
+        if (
+            update.password is not None
+            or update.email is not None
+            or update.is_verified is not None
+        ):
+            if verify_token is None:
+                raise VerifyTokenRequired()
+            await self.validate_token(
+                verify_token, token_type=TokenType.verify
+            )
         update_data = update.model_dump(
+            exclude={"password"},
             exclude_none=True,
         )
+        if update.password is not None:
+            update_data["hashed_password"] = crypt_ctx.hash(update.password)
         return await self.uow.users.update(user.id, **update_data)
 
     async def delete(self, user: UserRead) -> UserRead:
@@ -174,43 +203,65 @@ class UserService(Service):
         )
         return code
 
-    async def send_code(self, user: UserRead, via: NotifyVia) -> BackendOK:
+    async def send_code_email(self, email: str | None) -> None:
+        if email is None:
+            raise_val_error("Email is required")
+        user = await self.get_one_by_email(email)
         code = await self.create_code(user)
+        await self.notifications.send_email(
+            user,
+            "Your verification code",
+            "code",
+            code=code,
+        )
+
+    async def send_code_telegram(self, telegram_id: int | None) -> None:
+        if telegram_id is None:
+            raise_val_error("Telegram ID is required")
+        user = await self.uow.users.get_by_telegram_id(telegram_id)
+        if user is None:
+            raise UserTelegramNotFound()
+        code = await self.create_code(user)
+        await self.notifications.send_telegram(
+            telegram_id, f"Your verification code: {code}"
+        )
+
+    async def send_code(
+        self,
+        *,
+        via: NotifyVia = NotifyVia.email,
+        email: str | None = None,
+        telegram_id: int | None = None,
+    ) -> None:
         match via:
             case NotifyVia.email:
-                if user.email is None:
-                    raise EmailNotSet()
-                await self.notifications.send_email(
-                    user,
-                    "Your verification code",
-                    "code",
-                    code=code,
-                )
+                await self.send_code_email(email)
             case NotifyVia.telegram:
-                account = await self.uow.sso_accounts.get_by_user(
-                    "telegram", user.id
-                )
-                if account is None:
-                    raise TelegramNotConnected()
-                await self.notifications.send_telegram(
-                    account.account_id, f"Your verification code: {code}"
-                )
+                await self.send_code_telegram(telegram_id)
             case _:
                 assert_never(via)
-        return backend_ok
 
-    async def validate_code(self, user: UserRead, code: str) -> BackendOK:
+    async def validate_code(self, user: UserRead, code: str) -> None:
         user_code = await self.cache.get(f"codes:{user.id}", cast=str)
         if user_code is None:
             raise WrongCode()
         if not secrets.compare_digest(user_code, code):
             raise WrongCode()
         await self.cache.delete(f"codes:{user.id}")
-        return backend_ok
 
-    async def verify(self, user: UserRead, code: str) -> UserRead:
+    async def verify_code(self, user: UserRead, code: str) -> VerifyToken:
         await self.validate_code(user, code)
-        return await self.uow.users.update(user.id, is_verified=True)
+        return VerifyToken(
+            verify_token=encode_jwt(verify_params, subject=str(user.id)),
+            expires_in=verify_params.expires_in.total_seconds(),
+        )
+
+    async def reset_password(self, reset: ResetPassword) -> UserRead:
+        user = await self.get_one_by_email(reset.email)
+        await self.validate_code(user, reset.code)
+        return await self.uow.users.update(
+            user.id, hashed_password=crypt_ctx.hash(reset.password)
+        )
 
     async def get_many(self, params: PageParams) -> Page[UserRead]:
         return await self.uow.users.get_many(params)
@@ -226,7 +277,7 @@ class UserService(Service):
         return await self.uow.users.update(user.id, **update_data)
 
     @staticmethod
-    async def get_data_from_provider(
+    async def prepare_sso_account(
         provider: SSOBase, callback: SSOCallback
     ) -> SSOAccountCreate:
         sso_token = await provider.login(callback)
@@ -237,6 +288,28 @@ class UserService(Service):
             **sso_token.model_dump(exclude={"token_type"}),
         )
 
+    async def add_sso_account(self, data: SSOAccountCreate) -> UserRead:
+        # Check if user already exists
+        user = None
+        if data.email:
+            user = await self.get_by_email(data.email)
+        # If not, register new user
+        if not user:
+            telegram_id = (
+                int(data.account_id) if data.provider == "telegram" else None
+            )
+            user = await self.register(
+                first_name=data.first_name,
+                last_name=data.last_name,
+                email=data.email,
+                telegram_id=telegram_id,
+                is_verified=True,
+            )
+        await self.uow.sso_accounts.create(
+            user_id=user.id, **data.model_dump()
+        )
+        return user
+
     async def authorize_sso(
         self,
         data: SSOAccountCreate,
@@ -244,27 +317,16 @@ class UserService(Service):
         account = await self.uow.sso_accounts.get_by_account(
             data.provider, data.account_id
         )
-        user = None
-        data_dict = data.model_dump()
         if account:
             account = await self.uow.sso_accounts.update(
-                account.id, **data_dict
+                account.id, **data.model_dump()
             )
             user = await self.get_one(account.user_id)
         else:
-            if data.email:
-                user = await self.get_by_email(data.email)
-            if not user:
-                user = await self.register(
-                    first_name=data.first_name,
-                    last_name=data.last_name,
-                    email=data.email,
-                    is_verified=True,
-                )
-            await self.uow.sso_accounts.create(user_id=user.id, **data_dict)
+            user = await self.add_sso_account(data)
         return self.create_token(user)
 
-    async def connect(
+    async def connect_sso(
         self,
         user: UserRead,
         data: SSOAccountCreate,

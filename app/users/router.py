@@ -1,12 +1,13 @@
 from typing import Annotated, Any
 
-from fastapi import Depends, APIRouter
+from fastapi import Depends, APIRouter, Query
+from pydantic import EmailStr
 from starlette import status
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
 from app.db.schemas import PageParams, Page
-from app.schemas import BackendOK
+from app.schemas import BackendOK, backend_ok
 from app.sso.base import SSOBase
 from app.sso.dependencies import get_sso
 from app.sso.forms import SSOProviderOAuth2Form, SSOProviderAuthorize
@@ -35,6 +36,8 @@ from app.users.schemas import (
     BearerToken,
     Role,
     NotifyVia,
+    ResetPassword,
+    VerifyToken,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -46,15 +49,18 @@ async def register(
     user: UserCreate,
 ) -> UserRead:
     return await service.register(
-        user.first_name, user.last_name, user.email, user.password
+        first_name=user.first_name,
+        last_name=user.last_name,
+        email=user.email,
+        password=user.password,
     )
 
 
 @auth_router.post(
     "/token",
     description="""Grant types:
-    **Password grant** requires username and password.
-    **Refresh token grant** requires refresh token.
+- **Password grant** requires username and password.
+- **Refresh token grant** requires refresh token.
     """,
     status_code=status.HTTP_200_OK,
 )
@@ -65,6 +71,28 @@ async def get_token(
     return await service.authorize(form)
 
 
+@auth_router.post(
+    "/reset-password-request",
+    status_code=status.HTTP_200_OK,
+)
+async def reset_password_request(
+    service: UserServiceDep, email: EmailStr
+) -> BackendOK:
+    await service.send_code(via=NotifyVia.email, email=email)
+    return backend_ok
+
+
+@auth_router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+)
+async def reset_password(
+    service: UserServiceDep, reset: ResetPassword
+) -> BackendOK:
+    await service.reset_password(reset)
+    return backend_ok
+
+
 sso_router = APIRouter(prefix="/sso", tags=["SSO"])
 
 
@@ -73,7 +101,8 @@ sso_router = APIRouter(prefix="/sso", tags=["SSO"])
     description="""
 Redirects user to the Telegram login page.
 
-Testing:
+## How to test
+
 Telegram Redirect URI: `http://localhost:8000/api/v1/sso/telegram/callback`
 
 Authorization URL: `http://localhost:8000/api/v1/sso/telegram/login?redirect_uri=http://localhost:8000/api/v1/sso/telegram/callback`
@@ -113,7 +142,6 @@ async def telegram_token(
 )
 async def telegram_callback(request: Request) -> Any:
     bot_me = await bot.me()
-    print(request.url_for("telegram_view_data"))
     return templates.TemplateResponse(
         "telegram_login.html",
         {
@@ -147,18 +175,19 @@ async def telegram_connect(
         **open_id.model_dump(exclude={"id"}),
         account_id=open_id.id,
     )
-    return await service.connect(user, account)
+    return await service.connect_sso(user, account)
 
 
 @sso_router.get(
     "/{provider}/login",
     description="""
-    Redirects user to the provider's login page.
+Redirects user to the provider's login page.
 
-    Testing:
-    Google Redirect URI: `http://localhost:8000/api/v1/sso/google/callback`
-    Yandex Redirect URI: `http://localhost:8000/api/v1/sso/yandex/callback`
-    """,
+## How to test
+
+Google Redirect URI: `http://localhost:8000/api/v1/sso/google/callback`
+
+Yandex Redirect URI: `http://localhost:8000/api/v1/sso/yandex/callback`""",
     status_code=status.HTTP_303_SEE_OTHER,
     tags=["SSO"],
 )
@@ -189,7 +218,7 @@ async def sso_token(
         code=form.code,
         redirect_uri=form.redirect_uri,
     )
-    data = await service.get_data_from_provider(provider, callback)
+    data = await service.prepare_sso_account(provider, callback)
     return await service.authorize_sso(data)
 
 
@@ -226,22 +255,11 @@ async def connect(
         code=form.code,
         redirect_uri=form.redirect_uri,
     )
-    data = await service.get_data_from_provider(provider, callback)
-    return await service.connect(user, data)
+    data = await service.prepare_sso_account(provider, callback)
+    return await service.connect_sso(user, data)
 
 
 user_router = APIRouter(prefix="/users", tags=["Users"])
-
-
-@user_router.get(
-    "/verify",
-    dependencies=[Depends(Requires(is_verified=False))],
-    status_code=status.HTTP_200_OK,
-)
-async def verify(
-    service: UserServiceDep, user: UserDep, code: str
-) -> UserRead:
-    return await service.verify(user, code)
 
 
 @user_router.get("/me", status_code=status.HTTP_200_OK)
@@ -251,9 +269,12 @@ def me(user: UserDep) -> UserRead:
 
 @user_router.patch("/me", status_code=status.HTTP_200_OK)
 async def patch(
-    service: UserServiceDep, user: UserDep, update: UserUpdate
+    service: UserServiceDep,
+    user: UserDep,
+    update: UserUpdate,
+    verify_token: str | None = Query(None),
 ) -> UserRead:
-    return await service.update(user, update)
+    return await service.update(user, update, verify_token)
 
 
 @user_router.delete("/me", status_code=status.HTTP_200_OK)
@@ -266,9 +287,14 @@ notify_router = APIRouter(prefix="/notify", tags=["Notifications"])
 
 @notify_router.post("/code", status_code=status.HTTP_200_OK)
 async def send_code(
-    service: UserServiceDep, user: UserDep, via: NotifyVia = NotifyVia.email
+    service: UserServiceDep,
+    user: UserDep,
+    via: NotifyVia = NotifyVia.email,
 ) -> BackendOK:
-    return await service.send_code(user, via)
+    await service.send_code(
+        via=via, email=user.email, telegram_id=user.telegram_id
+    )
+    return backend_ok
 
 
 @notify_router.get("/code/verify", status_code=status.HTTP_200_OK)
@@ -276,8 +302,8 @@ async def verify_code(
     service: UserServiceDep,
     user: UserDep,
     code: str,
-) -> BackendOK:
-    return await service.validate_code(user, code)
+) -> VerifyToken:
+    return await service.verify_code(user, code)
 
 
 admin_router = APIRouter(
