@@ -34,6 +34,8 @@ class AuthSettings(BackendSettings):
     jwt_access_expire: int = 15 * 60
     jwt_refresh_expire: int = 30 * 24 * 60  # 30 days
 
+    first_user_email: str = "user@example.com"
+    first_user_password: str = "password"
     admin_email: str = "admin@example.com"
     admin_password: str = "changethis"
 

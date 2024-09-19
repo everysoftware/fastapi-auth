@@ -29,7 +29,3 @@ class SSOAccountRead(SSOAccountBase, IDModel, TimestampModel):
     access_token: str | None = Field(None, exclude=True)
     id_token: str | None = Field(None, exclude=True)
     refresh_token: str | None = Field(None, exclude=True)
-
-
-class URLResponse(BackendBase):
-    url: str

@@ -13,15 +13,15 @@ from app.users.repositories import UserRepository
 
 
 class UOW:
-    factory: async_sessionmaker[AsyncSession]
+    session_factory: async_sessionmaker[AsyncSession]
     session: AsyncSession
     transaction: AsyncSessionTransaction
 
     users: UserRepository
     sso_accounts: SSOAccountRepository
 
-    def __init__(self, factory: async_sessionmaker[AsyncSession]):
-        self.factory = factory
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
+        self.session_factory = session_factory
 
     @property
     def is_opened(self) -> bool:
@@ -34,7 +34,7 @@ class UOW:
         self.sso_accounts = SSOAccountRepository(self.session)
 
     async def open(self) -> None:
-        self.session = self.factory()
+        self.session = self.session_factory()
         await self.session.__aenter__()
         self.transaction = self.session.begin()
         await self.transaction.__aenter__()

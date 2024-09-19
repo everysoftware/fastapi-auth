@@ -2,14 +2,19 @@ from enum import StrEnum, auto
 from typing import Literal
 
 import pydantic
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, ConfigDict
 
 from app.schemas import BackendBase
 
+type AnyUrl = pydantic.AnyHttpUrl | str
 
-class SSOName(StrEnum):
-    google = auto()
-    yandex = auto()
+
+class DiscoveryDocument(BackendBase):
+    authorization_endpoint: str | None = None
+    token_endpoint: str | None = None
+    userinfo_endpoint: str | None = None
+
+    model_config = ConfigDict(extra="allow")
 
 
 class SSOCallback(BackendBase):
@@ -49,3 +54,13 @@ class OpenID(BackendBase):
     last_name: str | None = None
     display_name: str | None = None
     picture: str | None = None
+
+
+class SSOName(StrEnum):
+    google = auto()
+    yandex = auto()
+    telegram = auto()
+
+
+class AuthorizationURL(BackendBase):
+    url: str

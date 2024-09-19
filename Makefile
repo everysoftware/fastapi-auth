@@ -4,7 +4,7 @@ TESTS_PATH = tests
 .PHONY: run
 run:
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
-	uvicorn $(APP_NAME):app --host 0.0.0.0 --port 8000 --reload
+	uvicorn $(APP_NAME):app --host 0.0.0.0 --port 8000
 
 .PHONY: up-dev
 up-dev:

@@ -5,23 +5,26 @@ from starlette import status
 
 from app.schemas import BackendErrorResponse
 from app.sso_accounts.router import router as sso_accounts_router
-from app.users.dependencies import get_user
-from app.users.router import (
+from app.users.admin_router import router as admin_router
+from app.users.auth_router import (
     auth_router,
-    user_router,
-    sso_router,
-    notify_router,
 )
-
-protected_router = APIRouter(dependencies=[Depends(get_user)])
-
-protected_router.include_router(user_router)
-protected_router.include_router(sso_accounts_router)
+from app.users.dependencies import get_user
+from app.users.notify_router import router as notify_router
+from app.users.sso_router import router as sso_router
+from app.users.user_router import router as user_router
 
 unprotected_router = APIRouter()
 unprotected_router.include_router(auth_router)
 unprotected_router.include_router(sso_router)
-unprotected_router.include_router(notify_router)
+
+protected_router = APIRouter(dependencies=[Depends(get_user)])
+
+protected_router.include_router(notify_router)
+protected_router.include_router(user_router)
+protected_router.include_router(admin_router)
+protected_router.include_router(sso_accounts_router)
+
 main_router = APIRouter(
     responses={
         status.HTTP_400_BAD_REQUEST: {"model": BackendErrorResponse},

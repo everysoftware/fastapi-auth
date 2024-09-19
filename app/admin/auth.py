@@ -1,9 +1,9 @@
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 
+from app.context import users_ctx
 from app.exceptions import BackendError
 from app.users.forms import AuthorizationForm
-from app.users.lifespan import users_ctx
 from app.users.schemas import GrantType
 
 

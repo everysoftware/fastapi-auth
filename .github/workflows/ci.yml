@@ -9,17 +9,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_DB: app
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: changethis
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - uses: actions/checkout@v3
       - name: Install Python
@@ -33,8 +22,5 @@ jobs:
           poetry install
       - name: Lint
         run: |
-          poetry run make format
+          poetry run make check --output-format=github
           poetry run make lint
-      - name: Test
-        run: |
-          poetry run pytest -s -v

@@ -6,7 +6,7 @@ from pydantic import AnyHttpUrl
 from app.schemas import BackendBase
 
 
-class SSOProviderOAuth2Form:
+class SSOCallbackForm:
     def __init__(
         self,
         *,
@@ -17,7 +17,7 @@ class SSOProviderOAuth2Form:
         self.redirect_uri = redirect_uri
 
 
-class SSOProviderAuthorize(BackendBase):
+class SSOLoginParams(BackendBase):
     redirect_uri: AnyHttpUrl
     state: str = "default"
     redirect: bool = True

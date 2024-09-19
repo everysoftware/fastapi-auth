@@ -1,19 +1,25 @@
 from typing import AsyncGenerator
 
 import pytest
+from aiogram import Bot
 from faker import Faker
 from starlette.testclient import TestClient
 
 from app import app
-from app.db.uow import UOW
 from app.db.dependencies import get_uow
+from app.db.uow import UOW
 from app.users.schemas import UserCreate, UserRead, BearerToken
 from tests.conftest import test_factory
+from tests.utils.mocked_bot import MockedBot
 
 
 async def get_test_uow() -> AsyncGenerator[UOW, None]:
     async with UOW(test_factory) as uow:
         yield uow
+
+
+def get_test_bot() -> Bot:
+    return MockedBot()
 
 
 app.dependency_overrides[get_uow] = get_test_uow  # noqa

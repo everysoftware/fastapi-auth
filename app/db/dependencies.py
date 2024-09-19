@@ -5,11 +5,9 @@ from fastapi import Depends
 from app.db.connection import async_session_factory
 from app.db.uow import UOW
 
-uow = UOW(async_session_factory)
-
 
 async def get_uow() -> AsyncGenerator[UOW, None]:
-    async with uow:
+    async with UOW(async_session_factory) as uow:
         yield uow
 
 
