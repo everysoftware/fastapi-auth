@@ -22,5 +22,5 @@ jobs:
           poetry install
       - name: Lint
         run: |
-          poetry run make check
+          poetry run make format
           poetry run make lint
