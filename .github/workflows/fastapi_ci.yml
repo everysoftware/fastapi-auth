@@ -2,9 +2,7 @@ name: FastAPI CI
 
 on:
   push:
-    branches: [ "*" ]
   pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -35,9 +33,8 @@ jobs:
           poetry install
       - name: Lint
         run: |
-          poetry run ruff check app
-          poetry run ruff format app
-          poetry run mypy app
+          poetry run make format
+          poetry run make lint
       - name: Test
         run: |
-          poetry run pytest -s -v
+          poetry run make test
