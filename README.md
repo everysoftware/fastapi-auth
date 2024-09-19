@@ -1,6 +1,6 @@
 # FastAPI Authorization Server
 
-Powerful authorization server with JWT, SSO, RBAC, etc. 🔥
+Authorization server with Google, Yandex & Telegram SSO, RBAC, user management, etc. 🔥
 
 ## Features
 
@@ -11,7 +11,6 @@ Main features:
 - **Confirmation of actions** via Email & Telegram
 - Extendable **role-based access control** (supports user & superuser)
 - Powerful **user** management
-- **Test framework** for faster test-writing with examples
 
 ## Installation
 
