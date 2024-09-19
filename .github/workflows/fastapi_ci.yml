@@ -37,4 +37,4 @@ jobs:
           poetry run make lint
       - name: Test
         run: |
-          poetry run make test
+          poetry run pytest -s -v
