@@ -1,7 +1,11 @@
 from typing import NoReturn
 
+from fastapi import FastAPI, status, Request
 from fastapi.exceptions import RequestValidationError
-from starlette import status
+from fastapi.responses import JSONResponse
+
+from app.obs.logging import main_log
+from app.schemas import BackendErrorResponse
 
 
 class BackendError(Exception):
@@ -35,15 +39,42 @@ class BackendError(Exception):
         return f'{class_name}(message="{self.message}", error_code={self.error_code}, status_code={self.status_code})'
 
 
-class UnexpectedError(BackendError):
-    pass
-
-
 class ValidationError(RequestValidationError):
     pass
 
 
-def raise_val_error(msg: str) -> NoReturn:
+def InvalidRequest(msg: str) -> NoReturn:  # noqa
     raise ValidationError(
         [{"loc": "request", "msg": msg, "type": "invalid_request"}]
     )
+
+
+def setup_exceptions(app: FastAPI) -> None:
+    @app.exception_handler(BackendError)
+    def backend_exception_handler(
+        request: Request, ex: BackendError
+    ) -> JSONResponse:
+        main_log.error(f"{request.method} {request.url} failed: {repr(ex)}")
+        return JSONResponse(
+            status_code=ex.status_code,
+            content=BackendErrorResponse(
+                msg=ex.message,
+                code=ex.error_code,
+            ).model_dump(mode="json"),
+            headers=ex.headers,
+        )
+
+    @app.exception_handler(Exception)
+    def unhandled_exception_handler(
+        request: Request, ex: Exception
+    ) -> JSONResponse:
+        main_log.exception(
+            f"{request.method} {request.url} failed [UNHANDLED]: {repr(ex)}"
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=BackendErrorResponse(
+                msg="Internal Server Error",
+                code="unexpected_error",
+            ).model_dump(mode="json"),
+        )

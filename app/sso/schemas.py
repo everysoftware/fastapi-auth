@@ -1,4 +1,3 @@
-from enum import StrEnum, auto
 from typing import Literal
 
 import pydantic
@@ -54,12 +53,6 @@ class OpenID(BackendBase):
     last_name: str | None = None
     display_name: str | None = None
     picture: str | None = None
-
-
-class SSOName(StrEnum):
-    google = auto()
-    yandex = auto()
-    telegram = auto()
 
 
 class AuthorizationURL(BackendBase):

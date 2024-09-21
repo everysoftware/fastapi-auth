@@ -1,3 +1,4 @@
+from enum import StrEnum, auto
 from typing import Annotated, assert_never
 
 from fastapi import Depends
@@ -8,29 +9,33 @@ from app.config import settings
 from app.sso.exceptions import SSODisabled
 from app.sso.google import GoogleSSO
 from app.sso.interfaces import ISSO
-from app.sso.schemas import SSOName, AuthorizationURL
+from app.sso.schemas import AuthorizationURL
 from app.sso.telegram import TelegramSSO
 from app.sso.yandex import YandexSSO
 from app.telegram.dependencies import BotDep
 
 
+class SSOName(StrEnum):
+    google = auto()
+    yandex = auto()
+    telegram = auto()
+
+
 def get_google_sso() -> ISSO:
     return GoogleSSO(
-        settings.auth.google_client_id,
-        settings.auth.google_client_secret,
+        settings.google.client_id,
+        settings.google.client_secret,
     )
 
 
 def get_yandex_sso() -> ISSO:
     return YandexSSO(
-        settings.auth.yandex_client_id,
-        settings.auth.yandex_client_secret,
+        settings.yandex.client_id,
+        settings.yandex.client_secret,
     )
 
 
 def get_telegram_sso(bot: BotDep) -> TelegramSSO:
-    if not settings.auth.telegram_sso_enabled:
-        raise SSODisabled()
     return TelegramSSO(bot)
 
 
@@ -42,11 +47,11 @@ TelegramSSODep = Annotated[ISSO, Depends(get_telegram_sso)]
 def valid_sso(provider: SSOName) -> SSOName:
     match provider:
         case SSOName.google:
-            is_enabled = settings.auth.google_sso_enabled
+            is_enabled = settings.google.sso
         case SSOName.yandex:
-            is_enabled = settings.auth.yandex_sso_enabled
+            is_enabled = settings.yandex.sso
         case SSOName.telegram:
-            is_enabled = settings.auth.telegram_sso_enabled
+            is_enabled = settings.telegram.sso
         case _:
             assert_never(provider)
     if not is_enabled:

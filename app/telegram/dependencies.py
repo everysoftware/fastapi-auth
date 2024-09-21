@@ -9,7 +9,7 @@ from app.config import settings
 
 def get_bot() -> Bot:
     return Bot(
-        settings.auth.telegram_bot_token,
+        settings.telegram.bot_token,
         default=DefaultBotProperties(),
     )
 

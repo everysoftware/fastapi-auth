@@ -10,9 +10,13 @@ from app.db.dependencies import UOWDep
 from app.db.uow import UOW
 from app.mail.client import MailClient
 from app.mail.dependencies import MailDep
-from app.sso.dependencies import GoogleSSODep, YandexSSODep, TelegramSSODep
+from app.sso.dependencies import (
+    GoogleSSODep,
+    YandexSSODep,
+    TelegramSSODep,
+    SSOName,
+)
 from app.sso.interfaces import ISSO
-from app.sso.schemas import SSOName
 from app.telegram.dependencies import BotDep
 
 

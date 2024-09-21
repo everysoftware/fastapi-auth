@@ -1,4 +1,4 @@
 services:
   fastapi:
     build:
-      target: dev
+      target: prod

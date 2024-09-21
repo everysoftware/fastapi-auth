@@ -8,7 +8,7 @@ from urllib.parse import urlencode
 import httpx
 from httpx import Request
 
-from app.logging import logger
+from app.obs.logging import get_logger
 from .exceptions import SSOLoginError
 from .interfaces import ISSO
 from .pkce import get_pkce_challenge_pair
@@ -18,6 +18,8 @@ from .schemas import (
     AnyUrl,
 )
 from .state import generate_random_state
+
+logger = get_logger(__name__)
 
 
 class SSOBase(ISSO):
