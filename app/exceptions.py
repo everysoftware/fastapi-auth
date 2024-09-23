@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.obs.logging import main_log
+from app.obs.setup import main_log
 from app.schemas import BackendErrorResponse
 
 

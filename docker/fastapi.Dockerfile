@@ -48,7 +48,7 @@ COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
 COPY ./certs ./certs
-COPY ./logging.yaml ./logging-prod.ini ./
+COPY ./logging.yaml ./
 
 COPY ./docker/entrypoint-dev.sh /entrypoint-dev.sh
 RUN chmod +x /entrypoint-dev.sh
@@ -80,7 +80,7 @@ COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
 COPY ./certs ./certs
-COPY ./logging.yaml ./logging-prod.ini ./
+COPY ./logging.yaml ./
 
 # Entrypoint script
 COPY ./docker/entrypoint.sh /entrypoint.sh

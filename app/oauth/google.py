@@ -3,13 +3,13 @@ from typing import Any
 import httpx
 
 from app.oauth.base import (
-    SSOBase,
+    OAuth2Base,
 )
 from app.oauth.exceptions import SSOLoginError
 from app.oauth.schemas import OpenID, DiscoveryDocument
 
 
-class GoogleSSO(SSOBase):
+class GoogleOAuth2(OAuth2Base):
     discovery_url = (
         "https://accounts.google.com/.well-known/openid-configuration"
     )

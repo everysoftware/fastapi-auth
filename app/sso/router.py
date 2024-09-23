@@ -5,7 +5,7 @@ from starlette import status
 from starlette.requests import Request
 
 from app.oauth.dependencies import valid_sso, redirect_sso, SSOName
-from app.oauth.forms import SSOLoginParams, SSOCallbackForm
+from app.sso.schemas import SSOLoginParams, SSOCallbackForm
 from app.oauth.schemas import SSOCallback
 from app.oauth.telegram import TelegramAuthData
 from app.sso_accounts.schemas import SSOAccountRead

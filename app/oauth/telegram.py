@@ -12,7 +12,7 @@ from app.oauth.exceptions import (
     TelegramAuthDataExpired,
     Unauthorized,
 )
-from app.oauth.interfaces import ISSO
+from app.oauth.interfaces import IOAuth2
 from app.oauth.schemas import OpenID, AnyUrl, DiscoveryDocument, SSOBearerToken
 
 
@@ -31,7 +31,7 @@ def replace_localhost(url: Any) -> str:
     return str(url).replace("localhost", "127.0.0.1", 1)
 
 
-class TelegramSSO(ISSO):
+class TelegramOAuth2(IOAuth2):
     provider = "telegram"
     scope = ["write"]
     bot: Bot

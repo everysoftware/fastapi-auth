@@ -7,35 +7,35 @@ from starlette.responses import RedirectResponse
 
 from app.config import settings
 from app.oauth.exceptions import SSODisabled
-from app.oauth.google import GoogleSSO
-from app.oauth.interfaces import ISSO
+from app.oauth.google import GoogleOAuth2
+from app.oauth.interfaces import IOAuth2
 from app.oauth.schemas import AuthorizationURL
-from app.oauth.telegram import TelegramSSO
-from app.oauth.yandex import YandexSSO
+from app.oauth.telegram import TelegramOAuth2
+from app.oauth.yandex import YandexOAuth2
 from app.telegram.dependencies import BotDep
 
 
-def get_google_sso() -> ISSO:
-    return GoogleSSO(
+def get_google_sso() -> IOAuth2:
+    return GoogleOAuth2(
         settings.google.client_id,
         settings.google.client_secret,
     )
 
 
-def get_yandex_sso() -> ISSO:
-    return YandexSSO(
+def get_yandex_sso() -> IOAuth2:
+    return YandexOAuth2(
         settings.yandex.client_id,
         settings.yandex.client_secret,
     )
 
 
-def get_telegram_sso(bot: BotDep) -> TelegramSSO:
-    return TelegramSSO(bot, auth_expire=settings.telegram.auth_expire)
+def get_telegram_sso(bot: BotDep) -> TelegramOAuth2:
+    return TelegramOAuth2(bot, auth_expire=settings.telegram.auth_expire)
 
 
-GoogleSSODep = Annotated[ISSO, Depends(get_google_sso)]
-YandexSSODep = Annotated[ISSO, Depends(get_yandex_sso)]
-TelegramSSODep = Annotated[ISSO, Depends(get_telegram_sso)]
+GoogleSSODep = Annotated[IOAuth2, Depends(get_google_sso)]
+YandexSSODep = Annotated[IOAuth2, Depends(get_yandex_sso)]
+TelegramSSODep = Annotated[IOAuth2, Depends(get_telegram_sso)]
 
 
 class SSOName(StrEnum):

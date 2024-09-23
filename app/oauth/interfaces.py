@@ -5,8 +5,8 @@ from .exceptions import NotSupported, Unauthorized
 from .schemas import AnyUrl, SSOBearerToken, OpenID, DiscoveryDocument
 
 
-class ISSO(abc.ABC):
-    """Single sign-on client interface"""
+class IOAuth2(abc.ABC):
+    """OAuth 2.0 interface"""
 
     provider: str = NotImplemented
     client_id: str = NotImplemented

@@ -25,6 +25,8 @@ opentelemetry-instrumentation-logging = "^0.48b0"
 opentelemetry-exporter-otlp = "^1.27.0"
 prometheus-client = "^0.21.0"
 uvicorn-worker = "^0.2.0"
+opentelemetry-instrumentation-sqlalchemy = "^0.48b0"
+opentelemetry-instrumentation-httpx = "^0.48b0"
 
 
 [tool.poetry.group.dev.dependencies]

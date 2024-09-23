@@ -12,7 +12,9 @@ from app.config import settings
 
 
 def get_async_engine(dsn: str | URL, **kwargs: Any) -> AsyncEngine:
-    return create_async_engine(dsn, echo=True, pool_pre_ping=True, **kwargs)
+    return create_async_engine(
+        dsn, echo=settings.db.db_echo, pool_pre_ping=True, **kwargs
+    )
 
 
 def get_async_session_factory(
