@@ -3,7 +3,7 @@ from typing import Self
 from pydantic import model_validator
 from pydantic_settings import SettingsConfigDict
 
-from app.config import BackendSettings
+from app.schemas import BackendSettings
 from app.schemas import BackendBase
 
 
@@ -13,7 +13,7 @@ class SSOSettingsMixin(BackendBase):
     client_secret: str = ""
 
     @model_validator(mode="after")
-    def validate(self) -> Self:
+    def validate_secrets(self) -> Self:
         if self.sso:
             assert self.client_id, "Client ID is required"
             assert self.client_secret, "Client secret is required"
@@ -31,6 +31,6 @@ class YandexSettings(BackendSettings, SSOSettingsMixin):
 class TelegramSettings(BackendSettings):
     sso: bool = False
     bot_token: str = ""
-    expire: int = 5 * 60
+    auth_expire: int = 5 * 60
 
     model_config = SettingsConfigDict(env_prefix="telegram_")

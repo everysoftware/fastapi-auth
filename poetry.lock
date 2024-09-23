@@ -2732,6 +2732,21 @@ websockets = {version = ">=10.4", optional = true, markers = "extra == \"standar
 standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)", "pyyaml (>=5.1)", "uvloop (>=0.14.0,!=0.15.0,!=0.15.1)", "watchfiles (>=0.13)", "websockets (>=10.4)"]
 
 [[package]]
+name = "uvicorn-worker"
+version = "0.2.0"
+description = "Uvicorn worker for Gunicorn! ✨"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "uvicorn_worker-0.2.0-py3-none-any.whl", hash = "sha256:65dcef25ab80a62e0919640f9582216ee05b3bb1dc2f0e58b354ca0511c398fb"},
+    {file = "uvicorn_worker-0.2.0.tar.gz", hash = "sha256:f6894544391796be6eeed37d48cae9d7739e5a105f7e37061eccef2eac5a0295"},
+]
+
+[package.dependencies]
+gunicorn = ">=20.1.0"
+uvicorn = ">=0.14.0"
+
+[[package]]
 name = "uvloop"
 version = "0.20.0"
 description = "Fast implementation of asyncio event loop on top of libuv"
@@ -3208,4 +3223,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "021e27634f26817e5545b98f616ec177bf5a273b0a6f55dac326a3884c5e1a91"
+content-hash = "66c15ce6767c59776589fba06a21d641adfdd946a35754f71cb318eb1daa02cf"

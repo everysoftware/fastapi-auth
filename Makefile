@@ -18,7 +18,7 @@ up:
 
 .PHONY: up-prod
 up-prod:
-	docker-compose up -f docker-compose.yml -f docker-compose-prod.yml --build -d
+	docker-compose -f docker-compose.yml -f docker-compose-prod.yml up --build -d
 
 .PHONY: db
 db:
@@ -26,7 +26,7 @@ db:
 
 .PHONY: logs
 logs:
-	docker-compose logs --since LOGS_SINCE --follow
+	docker-compose logs --since $(LOGS_SINCE) --follow
 
 .PHONY: stop
 stop:
@@ -65,7 +65,7 @@ test:
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
 	pytest $(TESTS_PATH) -s -v
 
-# Only for windows
+# Windows only
 PHONY: kill
 kill:
 	TASKKILL /F /IM python.exe

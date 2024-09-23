@@ -6,15 +6,14 @@ from urllib.parse import urlencode
 
 from aiogram import Bot
 
-from app.config import settings
 from app.schemas import BackendBase
-from app.sso.exceptions import (
+from app.oauth.exceptions import (
     InvalidTelegramHash,
     TelegramAuthDataExpired,
     Unauthorized,
 )
-from app.sso.interfaces import ISSO
-from app.sso.schemas import OpenID, AnyUrl, DiscoveryDocument, SSOBearerToken
+from app.oauth.interfaces import ISSO
+from app.oauth.schemas import OpenID, AnyUrl, DiscoveryDocument, SSOBearerToken
 
 
 class TelegramAuthData(BackendBase):
@@ -36,6 +35,7 @@ class TelegramSSO(ISSO):
     provider = "telegram"
     scope = ["write"]
     bot: Bot
+    auth_expire: int
     auth_data: TelegramAuthData | None = None
 
     def __init__(
@@ -43,9 +43,12 @@ class TelegramSSO(ISSO):
         bot: Bot,
         redirect_uri: AnyUrl | None = None,
         scope: list[str] | None = None,
+        *,
+        auth_expire: int = 5 * 60,
     ):
         super().__init__(str(bot.id), bot.token, redirect_uri, scope)
         self.bot = bot
+        self.auth_expire = auth_expire
 
     async def discover(self) -> DiscoveryDocument:
         return DiscoveryDocument(
@@ -113,9 +116,7 @@ class TelegramSSO(ISSO):
             response["auth_date"], tz=datetime.UTC
         )
         now = datetime.datetime.now(tz=datetime.UTC)
-        if now - dt > datetime.timedelta(
-            seconds=settings.auth.telegram_auth_data_expire
-        ):
+        if now - dt > datetime.timedelta(seconds=self.auth_expire):
             raise TelegramAuthDataExpired()
         self._token = SSOBearerToken(access_token=callback.hash)
         return self.token

@@ -6,19 +6,13 @@ from starlette import status
 from starlette.responses import RedirectResponse
 
 from app.config import settings
-from app.sso.exceptions import SSODisabled
-from app.sso.google import GoogleSSO
-from app.sso.interfaces import ISSO
-from app.sso.schemas import AuthorizationURL
-from app.sso.telegram import TelegramSSO
-from app.sso.yandex import YandexSSO
+from app.oauth.exceptions import SSODisabled
+from app.oauth.google import GoogleSSO
+from app.oauth.interfaces import ISSO
+from app.oauth.schemas import AuthorizationURL
+from app.oauth.telegram import TelegramSSO
+from app.oauth.yandex import YandexSSO
 from app.telegram.dependencies import BotDep
-
-
-class SSOName(StrEnum):
-    google = auto()
-    yandex = auto()
-    telegram = auto()
 
 
 def get_google_sso() -> ISSO:
@@ -36,12 +30,18 @@ def get_yandex_sso() -> ISSO:
 
 
 def get_telegram_sso(bot: BotDep) -> TelegramSSO:
-    return TelegramSSO(bot)
+    return TelegramSSO(bot, auth_expire=settings.telegram.auth_expire)
 
 
 GoogleSSODep = Annotated[ISSO, Depends(get_google_sso)]
 YandexSSODep = Annotated[ISSO, Depends(get_yandex_sso)]
 TelegramSSODep = Annotated[ISSO, Depends(get_telegram_sso)]
+
+
+class SSOName(StrEnum):
+    google = auto()
+    yandex = auto()
+    telegram = auto()
 
 
 def valid_sso(provider: SSOName) -> SSOName:

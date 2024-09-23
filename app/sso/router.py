@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends
 from starlette import status
 from starlette.requests import Request
 
-from app.sso.dependencies import valid_sso, redirect_sso, SSOName
-from app.sso.forms import SSOLoginParams, SSOCallbackForm
-from app.sso.schemas import SSOCallback
-from app.sso.telegram import TelegramAuthData
+from app.oauth.dependencies import valid_sso, redirect_sso, SSOName
+from app.oauth.forms import SSOLoginParams, SSOCallbackForm
+from app.oauth.schemas import SSOCallback
+from app.oauth.telegram import TelegramAuthData
 from app.sso_accounts.schemas import SSOAccountRead
 from app.templating import templates
-from app.users.constants import CALLBACK_WARNING
+from app.sso.constants import CALLBACK_WARNING
 from app.users.dependencies import UserServiceDep, UserDep
 from app.users.schemas import BearerToken
 

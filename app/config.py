@@ -8,7 +8,7 @@ from app.db.config import DBSettings
 from app.mail.config import MailSettings
 from app.obs.config import ObservabilitySettings
 from app.schemas import BackendSettings
-from app.sso.config import GoogleSettings, YandexSettings, TelegramSettings
+from app.oauth.config import GoogleSettings, YandexSettings, TelegramSettings
 from app.users.config import AuthSettings
 
 if not os.getenv("ENVIRONMENT_SET"):

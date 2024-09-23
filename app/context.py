@@ -7,7 +7,7 @@ from app.cache.dependencies import get_cache
 from app.db.connection import async_session_factory
 from app.db.uow import UOW
 from app.mail.dependencies import get_mail
-from app.sso.dependencies import (
+from app.oauth.dependencies import (
     get_google_sso,
     get_yandex_sso,
     get_telegram_sso,

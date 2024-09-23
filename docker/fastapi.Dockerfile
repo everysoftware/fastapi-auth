@@ -53,7 +53,7 @@ COPY ./logging.yaml ./logging-prod.ini ./
 COPY ./docker/entrypoint-dev.sh /entrypoint-dev.sh
 RUN chmod +x /entrypoint-dev.sh
 ENTRYPOINT ["/entrypoint-dev.sh"]
-CMD ["uvicorn \"$APP_DIR:app\" --host 0.0.0.0 --port 8000 --log-config \"logging.yaml\""]
+CMD ["uvicorn \"$APP_DIR:app\" --host 0.0.0.0 --port 8000 --log-config \"logging.yaml\" --reload"]
 
 #
 # Stage: prod
@@ -86,4 +86,4 @@ COPY ./logging.yaml ./logging-prod.ini ./
 COPY ./docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn -w 4 -k uvicorn.workers.UvicornWorker \"$APP_DIR:app\" -b 0.0.0.0:8000 -c logging-prod.ini"]
+CMD ["gunicorn -w 4 -k app.MyUvicornWorker \"$APP_DIR:app\" -b 0.0.0.0:8000"]

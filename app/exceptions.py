@@ -1,5 +1,3 @@
-from typing import NoReturn
-
 from fastapi import FastAPI, status, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -43,10 +41,11 @@ class ValidationError(RequestValidationError):
     pass
 
 
-def InvalidRequest(msg: str) -> NoReturn:  # noqa
-    raise ValidationError(
-        [{"loc": "request", "msg": msg, "type": "invalid_request"}]
-    )
+class InvalidRequest(ValidationError):
+    def __init__(self, msg: str) -> None:
+        super().__init__(
+            [{"loc": "request", "msg": msg, "type": "invalid_request"}]
+        )
 
 
 def setup_exceptions(app: FastAPI) -> None:

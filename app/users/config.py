@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.config import BackendSettings
+from app.schemas import BackendSettings
 
 
 class AuthSettings(BackendSettings):

@@ -12,7 +12,7 @@ from app.obs.metrics import setting_otlp, PrometheusMiddleware
 
 def get_metrics(request: Request) -> Response:  # noqa
     return Response(
-        generate_latest(REGISTRY),
+        generate_latest(REGISTRY),  # type: ignore[no-untyped-call]
         headers={"Content-Type": CONTENT_TYPE_LATEST},
     )
 

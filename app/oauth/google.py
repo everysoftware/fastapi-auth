@@ -2,11 +2,11 @@ from typing import Any
 
 import httpx
 
-from app.sso.base import (
+from app.oauth.base import (
     SSOBase,
 )
-from app.sso.exceptions import SSOLoginError
-from app.sso.schemas import OpenID, DiscoveryDocument
+from app.oauth.exceptions import SSOLoginError
+from app.oauth.schemas import OpenID, DiscoveryDocument
 
 
 class GoogleSSO(SSOBase):

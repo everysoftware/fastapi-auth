@@ -1,7 +1,7 @@
 from typing import Any
 
-from app.sso.base import SSOBase
-from app.sso.schemas import OpenID, DiscoveryDocument
+from app.oauth.base import SSOBase
+from app.oauth.schemas import OpenID, DiscoveryDocument
 
 
 class YandexSSO(SSOBase):

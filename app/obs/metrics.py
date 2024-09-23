@@ -96,7 +96,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             RESPONSES.labels(
                 method=method,
                 path=path,
-                status_code=status_code,
+                status_code=status_code,  # noqa
                 app_name=self.app_name,
             ).inc()
             REQUESTS_IN_PROGRESS.labels(

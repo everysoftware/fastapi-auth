@@ -8,7 +8,7 @@ from app.schemas import BackendOK, backend_ok
 from app.users.dependencies import (
     UserServiceDep,
 )
-from app.users.forms import AuthorizationForm
+from app.users.auth import AuthorizationForm
 from app.users.schemas import (
     UserCreate,
     UserRead,

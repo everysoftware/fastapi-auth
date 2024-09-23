@@ -90,6 +90,7 @@ services:
       - ./obs/dashboards:/etc/grafana/dashboards
     depends_on:
       - loki
+      - tempo
       - prometheus
     logging: *default-logging
 

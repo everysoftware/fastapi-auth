@@ -10,8 +10,8 @@ from app.users.auth_router import (
     auth_router,
 )
 from app.users.dependencies import get_user
-from app.users.notify_router import router as notify_router
-from app.users.sso_router import router as sso_router
+from app.notify.router import router as notify_router
+from app.sso.router import router as sso_router
 from app.users.user_router import router as user_router
 
 unprotected_router = APIRouter()
