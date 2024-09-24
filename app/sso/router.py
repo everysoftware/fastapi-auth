@@ -5,12 +5,12 @@ from starlette import status
 from starlette.requests import Request
 
 from app.oauth.dependencies import valid_sso, redirect_sso, SSOName
-from app.sso.schemas import SSOLoginParams, SSOCallbackForm
 from app.oauth.schemas import SSOCallback
 from app.oauth.telegram import TelegramAuthData
+from app.sso.constants import CALLBACK_WARNING
+from app.sso.schemas import SSOLoginParams, SSOCallbackForm
 from app.sso_accounts.schemas import SSOAccountRead
 from app.templating import templates
-from app.sso.constants import CALLBACK_WARNING
 from app.users.dependencies import UserServiceDep, UserDep
 from app.users.schemas import BearerToken
 
@@ -20,18 +20,13 @@ router = APIRouter(prefix="/sso", tags=["SSO"])
 @router.get(
     "/{provider}/login",
     description="""
-Redirects user to the provider's login page.
+Redirects user to the provider's login page. The user will be redirected back to the specified redirect URI after logging in.
 
-## How to test
+Use Swagger UI to test the SSO login. Alternately, you can use the following URLs:
 
-Google Redirect URI: `http://localhost:8000/api/v1/sso/google/callback`
-
-Yandex Redirect URI: `http://localhost:8000/api/v1/sso/yandex/callback`
-
-Telegram Redirect URI: `http://localhost:8000/api/v1/sso/telegram/callback`
-
-Telegram Authorization URL:
-`http://localhost:8000/api/v1/sso/telegram/login?redirect_uri=http://localhost:8000/api/v1/sso/telegram/callback`
+[Google](http://localhost:8000/api/v1/sso/google/login?redirect_uri=http://localhost:8000/api/v1/sso/google/callback)
+[Yandex](http://localhost:8000/api/v1/sso/yandex/login?redirect_uri=http://localhost:8000/api/v1/sso/yandex/callback)
+[Telegram](http://localhost:8000/api/v1/sso/telegram/login?redirect_uri=http://localhost:8000/api/v1/sso/telegram/callback)
 """,
     status_code=status.HTTP_303_SEE_OTHER,
     tags=["SSO"],

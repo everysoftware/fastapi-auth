@@ -39,16 +39,20 @@ make up
 
 ### Swagger UI
 
-![img.png](assets/img.png)
-![img_1.png](assets/img_1.png)
+![img.png](assets/swagger_auth.png)
+![img_1.png](assets/swagger_oauth.png)
+
+### Consent example
+
+![img.png](assets/consent.png)
 
 ### Admin Panel
 
-![img_2.png](assets/img_2.png)
+![img_2.png](assets/admin_panel.png)
 
 ### Dashboards
 
-![img_3.png](assets/img_3.png)
-![img_4.png](assets/img_4.png)
+![img_3.png](assets/dashboard_metrics.png)
+![img_4.png](assets/dashboards_logs.png)
 
 **Made with love by Ivan Stasevich ❤️**

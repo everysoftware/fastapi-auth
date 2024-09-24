@@ -29,5 +29,5 @@ def unhandled_exception_handler(
 
 
 def setup_exceptions(app: FastAPI) -> None:
-    app.add_exception_handler(BackendError, backend_exception_handler)  # noqa
+    app.add_exception_handler(BackendError, backend_exception_handler)  # type: ignore[arg-type]
     app.add_exception_handler(Exception, unhandled_exception_handler)

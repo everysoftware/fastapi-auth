@@ -47,22 +47,22 @@ lint:
 
 PHONY: generate
 generate:
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
+	docker-compose up -d
 	alembic revision --autogenerate
 
 PHONY: upgrade
 upgrade:
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
+	docker-compose up -d
 	alembic upgrade head
 
 PHONY: downgrade
 downgrade:
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
+	docker-compose up -d
 	alembic downgrade -1
 
 PHONY: test
 test:
-	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up db -d
+	docker-compose up -d
 	pytest $(TESTS_PATH) -s -v
 
 # Windows only
