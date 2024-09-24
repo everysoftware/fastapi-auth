@@ -3,15 +3,15 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from starlette import status
 
+from app.notify.router import router as notify_router
 from app.schemas import BackendErrorResponse
+from app.sso.router import router as sso_router
 from app.sso_accounts.router import router as sso_accounts_router
 from app.users.admin_router import router as admin_router
 from app.users.auth_router import (
     auth_router,
 )
 from app.users.dependencies import get_user
-from app.notify.router import router as notify_router
-from app.sso.router import router as sso_router
 from app.users.user_router import router as user_router
 
 unprotected_router = APIRouter()
@@ -38,11 +38,11 @@ main_router.include_router(unprotected_router)
 main_router.include_router(protected_router)
 
 
-@main_router.get("/healthcheck", include_in_schema=False)
-def healthcheck() -> dict[str, Any]:
-    return {"status": "ok"}
-
-
 @main_router.get("/hc", include_in_schema=False)
 def hc() -> dict[str, Any]:
     return {"status": "ok"}
+
+
+@main_router.get("/exc", include_in_schema=False)
+def exc() -> dict[str, Any]:
+    raise Exception("test exception")

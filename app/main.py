@@ -7,7 +7,7 @@ from app.admin.main import app as admin_app
 from app.cache.lifespan import ping_redis
 from app.config import settings
 from app.cors import setup_cors
-from app.exceptions import setup_exceptions
+from app.exc_handlers import setup_exceptions
 from app.obs.setup import setup_obs
 from app.routing import main_router
 from app.users.lifespan import register_default_users
