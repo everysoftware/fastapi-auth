@@ -1,0 +1,66 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  access:
+    (): uvicorn.logging.AccessFormatter
+    fmt: "%(asctime)s %(levelprefix)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(client_addr)s - \"%(request_line)s\" %(status_code)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+    use_colors: True
+  default:
+    (): uvicorn.logging.DefaultFormatter
+    fmt: "%(asctime)s %(levelprefix)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=%(otelTraceID)s span_id=%(otelSpanID)s resource.service.name=%(otelServiceName)s] - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+    use_colors: True
+  uninstrumented:
+    (): uvicorn.logging.DefaultFormatter
+    fmt: "%(asctime)s %(levelprefix)s [%(name)s] [%(filename)s:%(lineno)d] [trace_id=0 span_id=0 resource.service.name=0] - %(message)s"
+    datefmt: "%Y-%m-%d %H:%M:%S"
+    use_colors: True
+
+handlers:
+  access:
+    formatter: access
+    class: logging.StreamHandler
+    stream: ext://sys.stderr
+  default:
+    formatter: default
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+  uninstrumented:
+    formatter: uninstrumented
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+
+loggers:
+  uvicorn:  # uvicorn debug
+    level: DEBUG
+    handlers:
+      - uninstrumented
+    propagate: yes
+  uvicorn.error:  # Lifespan
+    level: INFO
+    handlers:
+      - uninstrumented
+    propagate: no
+  uvicorn.access:
+    level: INFO
+    handlers:
+      - access
+    propagate: no
+  sqlalchemy.engine:
+    level: INFO
+    handlers:
+      - default
+    propagate: no
+  httpx:
+    level: INFO
+    handlers:
+      - default
+    propagate: no
+
+root:
+  level: INFO
+  handlers:
+    - uninstrumented
+  propagate: no

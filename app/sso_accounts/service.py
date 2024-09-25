@@ -24,4 +24,6 @@ class SSOAccountService(Service):
         return await self.uow.sso_accounts.paginate_by_user(user.id, params)
 
     async def delete(self, account: SSOAccountRead) -> SSOAccountRead:
+        if account.provider == "telegram":
+            await self.uow.users.update(account.user_id, telegram_id=None)
         return await self.uow.sso_accounts.delete(account.id)

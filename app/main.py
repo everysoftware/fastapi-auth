@@ -1,17 +1,15 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, status
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 
 from app.admin.main import app as admin_app
 from app.cache.lifespan import ping_redis
 from app.config import settings
-from app.exceptions import BackendError
-from app.logging import logger
+from app.cors import setup_cors
+from app.exc_handlers import setup_exceptions
+from app.obs.setup import setup_obs
 from app.routing import main_router
-from app.schemas import BackendErrorResponse
 from app.users.lifespan import register_default_users
 
 
@@ -27,52 +25,15 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     lifespan=lifespan,
-    title=settings.app_title,
+    title=settings.app_display_name,
     version=settings.app_version,
     summary="No description",
     root_path="/api/v1",
 )
 
-
-@app.exception_handler(BackendError)
-def backend_exception_handler(
-    request: Request, ex: BackendError
-) -> JSONResponse:
-    logger.error(f"{request.method} {request.url} failed: {repr(ex)}")
-    return JSONResponse(
-        status_code=ex.status_code,
-        content=BackendErrorResponse(
-            msg=ex.message,
-            code=ex.error_code,
-        ).model_dump(mode="json"),
-        headers=ex.headers,
-    )
-
-
-@app.exception_handler(Exception)
-def unhandled_exception_handler(
-    request: Request, ex: Exception
-) -> JSONResponse:
-    logger.exception(
-        f"{request.method} {request.url} failed [UNHANDLED]: {repr(ex)}"
-    )
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=BackendErrorResponse(
-            msg="Internal Server Error",
-            code="unexpected_error",
-        ).model_dump(mode="json"),
-    )
-
-
-app.add_middleware(
-    CORSMiddleware,  # noqa
-    allow_origins=settings.cors.cors_origins,
-    allow_origin_regex=settings.cors.cors_origin_regex,
-    allow_credentials=True,
-    allow_methods=settings.cors.cors_methods,
-    allow_headers=settings.cors.cors_headers,
-)
+setup_cors(app)
+setup_exceptions(app)
 app.mount("/admin", admin_app)
+setup_obs(app)
 
 app.include_router(main_router)

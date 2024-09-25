@@ -2,14 +2,14 @@ from typing import Any
 
 import httpx
 
-from app.sso.base import (
-    SSOBase,
+from app.oauth.base import (
+    OAuth2Base,
 )
-from app.sso.exceptions import SSOLoginError
-from app.sso.schemas import OpenID, DiscoveryDocument
+from app.oauth.exceptions import SSOLoginError
+from app.oauth.schemas import OpenID, DiscoveryDocument
 
 
-class GoogleSSO(SSOBase):
+class GoogleOAuth2(OAuth2Base):
     discovery_url = (
         "https://accounts.google.com/.well-known/openid-configuration"
     )

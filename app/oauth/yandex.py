@@ -1,10 +1,10 @@
 from typing import Any
 
-from app.sso.base import SSOBase
-from app.sso.schemas import OpenID, DiscoveryDocument
+from app.oauth.base import OAuth2Base
+from app.oauth.schemas import OpenID, DiscoveryDocument
 
 
-class YandexSSO(SSOBase):
+class YandexOAuth2(OAuth2Base):
     provider = "yandex"
     scope = ["login:email", "login:info", "login:avatar"]
     avatar_url = "https://avatars.yandex.net/get-yapic"

@@ -9,11 +9,11 @@ from jwt import InvalidTokenError
 from app.config import settings
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
-from app.exceptions import raise_val_error
+from app.exceptions import InvalidRequest
 from app.security.hashing import crypt_ctx
 from app.security.tokens import encode_jwt, decode_jwt
 from app.service import Service
-from app.sso.schemas import SSOName
+from app.oauth.dependencies import SSOName
 from app.sso_accounts.schemas import SSOAccountRead, SSOAccountCreate
 from app.users.exceptions import (
     UserAlreadyExists,
@@ -28,7 +28,7 @@ from app.users.exceptions import (
     UserTelegramNotFound,
     VerifyTokenRequired,
 )
-from app.users.forms import AuthorizationForm
+from app.users.auth import AuthorizationForm
 from app.users.schemas import (
     UserUpdate,
     UserRead,
@@ -188,7 +188,7 @@ class UserService(Service):
 
     async def send_code_email(self, email: str | None) -> None:
         if email is None:
-            raise_val_error("Email is not set")
+            raise InvalidRequest("Email is not set")
         user = await self.get_one_by_email(email)
         code = await self.create_code(user)
         self.background.add_task(
@@ -201,7 +201,7 @@ class UserService(Service):
 
     async def send_code_telegram(self, telegram_id: int | None) -> None:
         if telegram_id is None:
-            raise_val_error("Telegram is not connected")
+            raise InvalidRequest("Telegram is not connected")
         user = await self.uow.users.get_by_telegram_id(telegram_id)
         if user is None:
             raise UserTelegramNotFound()

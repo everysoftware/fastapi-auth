@@ -1,3 +1,4 @@
+import logging
 import os
 import warnings
 from typing import (
@@ -8,9 +9,8 @@ from urllib.parse import urlencode
 import httpx
 from httpx import Request
 
-from app.logging import logger
 from .exceptions import SSOLoginError
-from .interfaces import ISSO
+from .interfaces import IOAuth2
 from .pkce import get_pkce_challenge_pair
 from .schemas import (
     SSOCallback,
@@ -19,8 +19,10 @@ from .schemas import (
 )
 from .state import generate_random_state
 
+logger = logging.getLogger(__name__)
 
-class SSOBase(ISSO):
+
+class OAuth2Base(IOAuth2):
     uses_pkce: bool = False
     requires_state: bool = True
     allow_insecure_http: bool = False

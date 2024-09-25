@@ -1,17 +1,17 @@
-# FastAPI Authorization Server
+# FastAPI Auth
 
-Powerful authorization server with JWT, SSO, RBAC, etc. 🔥
+Authorization server with **Google**, **Yandex** & **Telegram SSO**, **RBAC**, **user management**, etc.
+Powered by FastAPI & PostgreSQL.
 
 ## Features
 
-Main features:
-
-- Secure **authorization** with JWT+RSA+Refresh Tokens
+- Secure and usable **JWT authorization** (feat. Refresh Tokens)
 - Extendable **single sign-on** via Google, Yandex & Telegram
-- **Confirmation of actions** via Email & Telegram
+- Confirm actions using a **one-time code** (Email & Telegram)
 - Extendable **role-based access control** (supports user & superuser)
-- Powerful **user** management
-- **Test framework** for faster test-writing with examples
+- Powerful **user** management: CRUD, search, etc.
+- **Admin panel** with authorization & CRUD operations
+- **Observability** with Grafana: metrics, tracing & logging
 
 ## Installation
 
@@ -34,5 +34,25 @@ openssl rsa -in certs/private.pem -pubout -out certs/public.pem
 ```bash
 make up
 ```
+
+## Screenshots
+
+### Swagger UI
+
+![img.png](assets/swagger_auth.png)
+![img_1.png](assets/swagger_oauth.png)
+
+### Consent example
+
+![img.png](assets/consent.png)
+
+### Admin Panel
+
+![img_2.png](assets/admin_panel.png)
+
+### Dashboards
+
+![img_3.png](assets/dashboard_metrics.png)
+![img_4.png](assets/dashboards_logs.png)
 
 **Made with love by Ivan Stasevich ❤️**

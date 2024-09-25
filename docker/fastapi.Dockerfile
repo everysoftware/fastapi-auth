@@ -1,5 +1,5 @@
-ARG APP_NAME=app
-ARG APP_PATH=/opt/$APP_NAME
+ARG APP_DIR=app
+ARG APP_PATH=/opt/$APP_DIR
 ARG PYTHON_VERSION=3.12-bullseye
 ARG POETRY_VERSION=1.8.2
 
@@ -8,7 +8,7 @@ ARG POETRY_VERSION=1.8.2
 #
 
 FROM python:$PYTHON_VERSION AS base
-ARG APP_NAME
+ARG APP_DIR
 ARG APP_PATH
 ARG POETRY_VERSION
 
@@ -22,8 +22,8 @@ ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 ENV POETRY_NO_INTERACTION=1
 
 # Set environment
-ENV APP_NAME=$APP_NAME
-ENV NO_ENV_FILE=1
+ENV APP_DIR=$APP_DIR
+ENV ENVIRONMENT_SET=1
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
@@ -38,27 +38,28 @@ RUN poetry export --without-hashes --without dev -f requirements.txt -o requirem
 # Stage: dev
 #
 FROM base as dev
-ARG APP_NAME
+ARG APP_DIR
 ARG APP_PATH
 
 # Copy files
 WORKDIR $APP_PATH
-COPY ./$APP_NAME ./$APP_NAME
+COPY ./$APP_DIR ./$APP_DIR
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
 COPY ./certs ./certs
+COPY ./logging.yaml ./
 
 COPY ./docker/entrypoint-dev.sh /entrypoint-dev.sh
 RUN chmod +x /entrypoint-dev.sh
 ENTRYPOINT ["/entrypoint-dev.sh"]
-CMD ["uvicorn \"$APP_NAME:app\" --host 0.0.0.0 --port 8000"]
+CMD ["uvicorn \"$APP_DIR:app\" --host 0.0.0.0 --port 8000 --log-config \"logging.yaml\" --reload"]
 
 #
 # Stage: prod
 #
 FROM python:$PYTHON_VERSION as prod
-ARG APP_NAME
+ARG APP_DIR
 ARG APP_PATH
 
 ENV PIP_NO_CACHE_DIR=on
@@ -70,18 +71,19 @@ COPY --from=base $APP_PATH/requirements.txt ./
 RUN python -m pip install -r requirements.txt
 
 # Set environment
-ENV APP_NAME=$APP_NAME
+ENV APP_DIR=$APP_DIR
 ENV ENVIRONMENT_SET=1
 
 # Copy files
-COPY ./$APP_NAME ./$APP_NAME
+COPY ./$APP_DIR ./$APP_DIR
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
 COPY ./certs ./certs
+COPY ./logging.yaml ./
 
 # Entrypoint script
 COPY ./docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn -w 4 -k uvicorn.workers.UvicornWorker \"$APP_NAME:app\" -b 0.0.0.0:8000"]
+CMD ["gunicorn -w 4 -k app.MyUvicornWorker \"$APP_DIR:app\" -b 0.0.0.0:8000"]

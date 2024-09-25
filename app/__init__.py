@@ -1,3 +1,4 @@
 from .main import app
+from .workers import MyUvicornWorker
 
-__all__ = ["app"]
+__all__ = ["MyUvicornWorker", "app"]

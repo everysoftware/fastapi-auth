@@ -10,9 +10,13 @@ from app.db.dependencies import UOWDep
 from app.db.uow import UOW
 from app.mail.client import MailClient
 from app.mail.dependencies import MailDep
-from app.sso.dependencies import GoogleSSODep, YandexSSODep, TelegramSSODep
-from app.sso.interfaces import ISSO
-from app.sso.schemas import SSOName
+from app.oauth.dependencies import (
+    GoogleSSODep,
+    YandexSSODep,
+    TelegramSSODep,
+    SSOName,
+)
+from app.oauth.interfaces import IOAuth2
 from app.telegram.dependencies import BotDep
 
 
@@ -21,9 +25,9 @@ class Service(ABC):
     cache: CacheAdapter
     mail: MailClient
     bot: Bot
-    google_sso: ISSO
-    yandex_sso: ISSO
-    telegram_sso: ISSO
+    google_sso: IOAuth2
+    yandex_sso: IOAuth2
+    telegram_sso: IOAuth2
     background: BackgroundTasks
 
     def __init__(
@@ -46,7 +50,7 @@ class Service(ABC):
         self.telegram_sso = telegram_sso
         self.background = background
 
-    def resolve_sso(self, provider: SSOName) -> ISSO:
+    def resolve_sso(self, provider: SSOName) -> IOAuth2:
         match provider:
             case SSOName.google:
                 return self.google_sso

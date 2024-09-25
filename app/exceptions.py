@@ -1,7 +1,8 @@
-from typing import NoReturn
-
+from fastapi import status
 from fastapi.exceptions import RequestValidationError
-from starlette import status
+from fastapi.responses import JSONResponse
+
+from app.schemas import BackendErrorResponse
 
 
 class BackendError(Exception):
@@ -35,15 +36,23 @@ class BackendError(Exception):
         return f'{class_name}(message="{self.message}", error_code={self.error_code}, status_code={self.status_code})'
 
 
-class UnexpectedError(BackendError):
-    pass
+class UnexpectedErrorResponse(JSONResponse):
+    def __init__(self) -> None:
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=BackendErrorResponse(
+                msg="Internal Server Error",
+                code="unexpected_error",
+            ).model_dump(mode="json"),
+        )
 
 
 class ValidationError(RequestValidationError):
     pass
 
 
-def raise_val_error(msg: str) -> NoReturn:
-    raise ValidationError(
-        [{"loc": "request", "msg": msg, "type": "invalid_request"}]
-    )
+class InvalidRequest(ValidationError):
+    def __init__(self, msg: str) -> None:
+        super().__init__(
+            [{"loc": "request", "msg": msg, "type": "invalid_request"}]
+        )
