@@ -22,16 +22,23 @@ services:
       - "5432:5432"
 
   redis:
-    build:
-      context: .
-      dockerfile: docker/redis.Dockerfile
+    image: redis:latest
     env_file:
       - .env
-    volumes:
-      - redis_data:/var/lib/redis/data
     restart: unless-stopped
     ports:
       - "6379:6379"
+    # Set credentials & logging
+    command: >
+      sh -c '
+        mkdir -p /usr/local/etc/redis &&
+        echo "bind 0.0.0.0" > /usr/local/etc/redis/redis.conf &&
+        echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&
+        echo "user default on >$REDIS_PASSWORD ~* +@all" > /usr/local/etc/redis/users.acl &&
+        redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl
+      '
+    volumes:
+      - redis_data:/var/lib/redis/data
 
   loki:
     image: grafana/loki:3.0.0

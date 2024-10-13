@@ -1,11 +1,11 @@
 from sqlalchemy import select
 
-from app.db.repository import AlchemyGenericRepository
+from app.db.repository import AlchemyRepository
 from app.users.models import UserOrm
 from app.users.schemas import UserRead
 
 
-class UserRepository(AlchemyGenericRepository[UserOrm, UserRead]):
+class UserRepository(AlchemyRepository[UserOrm, UserRead]):
     model_type = UserOrm
     schema_type = UserRead
 

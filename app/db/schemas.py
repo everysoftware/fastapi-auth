@@ -45,8 +45,8 @@ class PageParams(BackendBase):
         return [SortParam.from_str(i) for i in sort]
 
 
-class Page[IT: BackendBase](BackendBase):
-    items: list[IT]
+class Page[T: BackendBase](BackendBase):
+    items: list[T]
 
     @computed_field  # type: ignore
     @property

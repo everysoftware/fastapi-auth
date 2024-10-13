@@ -1,15 +1,13 @@
 from sqlalchemy import select
 
-from app.db.repository import AlchemyGenericRepository
+from app.db.repository import AlchemyRepository
 from app.db.schemas import PageParams, Page
 from app.db.types import ID
 from app.sso_accounts.models import SSOAccountOrm
 from app.sso_accounts.schemas import SSOAccountRead
 
 
-class SSOAccountRepository(
-    AlchemyGenericRepository[SSOAccountOrm, SSOAccountRead]
-):
+class SSOAccountRepository(AlchemyRepository[SSOAccountOrm, SSOAccountRead]):
     model_type = SSOAccountOrm
     schema_type = SSOAccountRead
 

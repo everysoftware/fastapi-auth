@@ -13,7 +13,6 @@ logger.addFilter(EndpointFilter())
 
 main_log = logging.getLogger("fastapiapp")
 main_log.setLevel(logging.INFO)
-if not (default_handler := logging.getHandlerByName("default")):
-    raise RuntimeError("Incorrect log config: no default handler")
-main_log.addHandler(default_handler)
+if default_handler := logging.getHandlerByName("default"):
+    main_log.addHandler(default_handler)
 main_log.propagate = False

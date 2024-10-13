@@ -55,4 +55,4 @@ make up
 ![img_3.png](assets/dashboard_metrics.png)
 ![img_4.png](assets/dashboards_logs.png)
 
-**Made with love by Ivan Stasevich ❤️**
+**Made with ❤️**

@@ -2,15 +2,10 @@ APP_PATH = app
 TESTS_PATH = tests
 LOGS_SINCE = 10m
 
-ifneq (,$(wildcard ./.env))
-    include .env
-    export
-endif
-
 .PHONY: run
 run:
 	docker-compose up db redis -d
-	uvicorn $(APP_PATH):app --host 0.0.0.0 --port 8000
+	uvicorn $(APP_PATH):app --host 0.0.0.0 --port 8000 --log-config logging.yaml
 
 .PHONY: up
 up:

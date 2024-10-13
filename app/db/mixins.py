@@ -4,7 +4,6 @@ import uuid
 from sqlalchemy.orm import mapped_column, Mapped
 
 from app.db import utils
-from app.db.types import ID
 
 
 # https://docs.sqlalchemy.org/en/20/core/defaults.html
@@ -17,7 +16,7 @@ class Mixin:
 
 
 class IDMixin(Mixin):
-    id: Mapped[ID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True,
         default=uuid.uuid4,
         sort_order=-100,
