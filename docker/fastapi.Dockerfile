@@ -37,7 +37,7 @@ RUN poetry export --without-hashes --without dev -f requirements.txt -o requirem
 #
 # Stage: dev
 #
-FROM base as dev
+FROM base AS dev
 ARG APP_DIR
 ARG APP_PATH
 
@@ -58,7 +58,7 @@ CMD ["uvicorn \"$APP_DIR:app\" --host 0.0.0.0 --port 8000 --log-config \"logging
 #
 # Stage: prod
 #
-FROM python:$PYTHON_VERSION as prod
+FROM python:$PYTHON_VERSION AS prod
 ARG APP_DIR
 ARG APP_PATH
 
@@ -86,4 +86,4 @@ COPY ./logging.yaml ./
 COPY ./docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn -w 4 -k app.MyUvicornWorker \"$APP_DIR:app\" -b 0.0.0.0:8000"]
+CMD ["gunicorn -w 4 -k app.workers.MyUvicornWorker \"$APP_DIR:app\" -b 0.0.0.0:8000"]

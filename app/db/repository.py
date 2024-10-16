@@ -10,14 +10,14 @@ from app.db.types import ID
 from app.schemas import BackendBase
 
 
-class AlchemyRepository(ABC):
+class BaseAlchemyRepository(ABC):
     session: AsyncSession
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
 
-class AlchemyGenericRepository[M: BaseOrm, S: BackendBase](AlchemyRepository):
+class AlchemyRepository[M: BaseOrm, S: BackendBase](BaseAlchemyRepository):
     model_type: type[M]
     schema_type: type[S]
 

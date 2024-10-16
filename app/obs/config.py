@@ -2,4 +2,4 @@ from app.schemas import BackendSettings
 
 
 class ObservabilitySettings(BackendSettings):
-    export_url: str = "http://tempo:4317"
+    tempo_url: str = "http://host.docker.internal:4317"

@@ -22,22 +22,23 @@ services:
       - "5432:5432"
 
   redis:
-    build:
-      context: .
-      dockerfile: docker/redis.Dockerfile
+    image: redis:latest
     env_file:
       - .env
-    volumes:
-      - redis_data:/var/lib/redis/data
     restart: unless-stopped
     ports:
       - "6379:6379"
-
-  loki:
-    image: grafana/loki:3.0.0
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
+    # Set credentials & logging
+    command: >
+      sh -c '
+        mkdir -p /usr/local/etc/redis &&
+        echo "bind 0.0.0.0" > /usr/local/etc/redis/redis.conf &&
+        echo "appendonly yes" >> /usr/local/etc/redis/redis.conf &&
+        echo "user default on >$REDIS_PASSWORD ~* +@all" > /usr/local/etc/redis/users.acl &&
+        redis-server /usr/local/etc/redis/redis.conf --aclfile /usr/local/etc/redis/users.acl
+      '
+    volumes:
+      - redis_data:/var/lib/redis/data
 
   fastapi:
     build:
@@ -52,47 +53,11 @@ services:
     depends_on:
       - db
       - redis
-      - loki
     logging: *default-logging
     volumes:
       - "./app:/opt/app/app"
-
-  prometheus:
-    image: prom/prometheus:v2.51.2
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./obs/prometheus:/workspace
-    command:
-      - --config.file=/workspace/prometheus.yml
-      - --enable-feature=exemplar-storage
-    depends_on:
-      - loki
-    logging: *default-logging
-
-  tempo:
-    image: grafana/tempo:2.4.1
-    command: [ "--target=all", "--storage.trace.backend=local", "--storage.trace.local.path=/var/tempo", "--auth.enabled=false" ]
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-    depends_on:
-      - loki
-    logging: *default-logging
-
-  grafana:
-    image: grafana/grafana:10.4.2
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./obs/grafana/:/etc/grafana/provisioning/datasources
-      - ./obs/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ./obs/dashboards:/etc/grafana/dashboards
-    depends_on:
-      - loki
-      - tempo
-      - prometheus
-    logging: *default-logging
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   pg_data:

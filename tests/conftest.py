@@ -18,6 +18,7 @@ test_factory = get_async_session_factory(test_engine)
 alembic_config = alembic_config_from_url(test_db_url)
 
 
+# TODO
 @pytest.fixture(scope="session", autouse=True)
 async def init_db() -> AsyncGenerator[None, Any]:
     async with temporary_db(test_db_url):
