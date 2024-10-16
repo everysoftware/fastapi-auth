@@ -1,16 +1,16 @@
 # Breeze Auth
 
-Authorization server with OAuth2, roles, user management, etc.
+Authorization server with OAuth2, permissions, user management, etc.
 
 ## Features
 
-- Secure and usable **JWT authorization**
-- Extendable **single sign-on** via Google, Telegram & Yandex
-- Confirm actions using a **one-time code** (Email & Telegram)
-- Extendable **role-based access control**
-- Powerful **user** management: CRUD, search, etc.
-- **Admin panel** with authorization & CRUD operations
-- **Observability** with Grafana: metrics, tracing & logging
+- Secure **JWT authorization**
+- Scalable Google, Telegram and Yandex **single sign-on**
+- **One-time code** confirmation (Email & Telegram)
+- Extendable **permission system**
+- Powerful **user management**: CRUD, search, roles, etc.
+- **Admin panel** with authorization and CRUD operations
+- **Grafana dashboard** with metrics, tracing & logging
 
 ## Installation
 
