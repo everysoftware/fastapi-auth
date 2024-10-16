@@ -12,6 +12,6 @@ def setup_obs(app: FastAPI) -> None:
     instrument(
         app,
         async_engine,
-        export_url=settings.obs.export_url,
+        export_url=settings.obs.tempo_url,
         app_name=settings.app_name,
     )
