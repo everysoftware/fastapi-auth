@@ -1,4 +1,4 @@
-# Breeze Auth
+# FastID
 
 Authorization server with OAuth2, permissions, user management, etc.
 
@@ -18,7 +18,7 @@ Authorization server with OAuth2, permissions, user management, etc.
 2. Clone the repository:
 
     ```bash
-    git clone https://github.com/everysoftware/fastapi-auth
+    git clone https://github.com/everysoftware/fastid
     ```
 
 3. Generate RSA keys:

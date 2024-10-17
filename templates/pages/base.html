@@ -1,32 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr" data-mdb-theme="dark">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta http-equiv="content-type" content="text/html; charset=windows-1251"/>
+    <meta name="color-scheme" content="dark">
 
     {% block head %}
         <title>{% block title %}{% endblock %}</title>
     {% endblock %}
+    <link rel="shortcut icon" href="/static/assets/favicon.ico"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.0.0/mdb.min.css"/>
+    {% block links %} {% endblock %}
+    <style>
 
-    {% block styles %} {% endblock %}
-    {% block scripts %} {% endblock %}
+        .form-control:-webkit-autofill,
+        .form-control:-webkit-autofill:hover,
+        .form-control:-webkit-autofill:focus,
+        .form-control:-webkit-autofill:active {
+            border: none;
+            -webkit-text-fill-color: var(--mdb-surface);
+            -webkit-box-shadow: 0 0 0 100px var(--mdb-body-bg) inset !important;
+        }
+
+        {% block style %}{% endblock %}
+
+    </style>
+
 </head>
-
 <body>
-<header>
-    {% block header %}
-    {% endblock %}
-</header>
 
-<main>
-    <div class="content">{% block content %}{% endblock %}</div>
-</main>
+{% block main %}{% endblock %}
 
-<footer>
-    {% block footer %}
-    {% endblock %}
-</footer>
+<script
+        src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.0.0/mdb.umd.min.js"
+></script>
+{% block scripts %} {% endblock %}
+
 </body>
-
 </html>

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Login | {{ app_display_name }} {% endblock %}
+
+{% block style %}
+    .divider:after,
+    .divider:before {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #eee;
+    }
+{% endblock %}
+{% block scripts %}
+    <script type="module" src="/static/js/login.js"></script>
+{% endblock %}
+
+{% block main %}
+
+    <section class="vh-100">
+        <div class="container py-5 h-100">
+            <div class="row d-flex align-items-center justify-content-center h-100">
+                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                    <form id="loginForm" class="needs-validation" novalidate>
+                        <h2 class="text-center mb-4">{{ app_display_name }}</h2>
+                        <!-- Email input -->
+                        <div data-mdb-input-init class="form-outline mb-4">
+                            <input type="email" id="email" class="form-control form-control-lg" required/>
+                            <label class="form-label" for="email">Email address</label>
+                        </div>
+
+                        <!-- Password input -->
+                        <div data-mdb-input-init class="form-outline mb-4">
+                            <input type="password" id="password" class="form-control form-control-lg"
+                                   required/>
+                            <label class="form-label" for="password">Password</label>
+                        </div>
+
+                        <div class="d-flex justify-content-around align-items-center mb-4">
+                            <!-- Checkbox -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="form1Example3" checked/>
+                                <label class="form-check-label" for="form1Example3"> Remember me </label>
+                            </div>
+                            <a href="#!">Forgot password?</a>
+
+                        </div>
+
+                        <!-- Submit button -->
+                        <button id="loginBtn" type="submit" data-mdb-button-init data-mdb-ripple-init
+                                class="btn btn-primary btn-lg btn-block">Login
+                        </button>
+                        <a data-mdb-ripple-init class="btn btn-primary btn-lg btn-block"
+                           style="background-color: #3b5998" href="#!"
+                           role="button">Create an account</a>
+
+                        <div class="divider d-flex align-items-center my-4">
+                            <p class="text-center fw-bold mx-3 mb-0 text-muted">OR CONTINUE WITH</p>
+                        </div>
+
+                        <div class="row d-flex align-items-center justify-content-center">
+                            <button type="button" data-mdb-button-init data-mdb-ripple-init
+                                    style="background-color: #F44336"
+                                    class="btn btn-primary btn-floating mx-2">
+                                <i class="fab fa-google"></i>
+                            </button>
+
+                            <button type="button" data-mdb-button-init data-mdb-ripple-init
+                                    style="background-color: #03A9F4"
+                                    class="btn btn-primary btn-floating mx-2">
+                                <i class="fab fa-telegram"></i>
+                            </button>
+
+                            <button type="button" data-mdb-button-init data-mdb-ripple-init
+                                    style="background-color: #EA4335"
+                                    class="btn btn-primary btn-floating mx-2">
+                                <i class="fab fa-yandex"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

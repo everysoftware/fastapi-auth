@@ -47,6 +47,7 @@ COPY ./$APP_DIR ./$APP_DIR
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
+COPY ./static ./static
 COPY ./certs ./certs
 COPY ./logging.yaml ./
 
@@ -79,6 +80,7 @@ COPY ./$APP_DIR ./$APP_DIR
 COPY ./migrations ./migrations
 COPY ./alembic.ini ./
 COPY ./templates ./templates
+COPY ./static ./static
 COPY ./certs ./certs
 COPY ./logging.yaml ./
 

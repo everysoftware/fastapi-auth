@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 
 from app.admin.main import app as admin_app
+from app.frontend.main import app as frontend_app
 from app.cache.lifespan import ping_redis
 from app.config import settings
 from app.cors import setup_cors
@@ -23,17 +24,20 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     # ...
 
 
-app = FastAPI(
-    lifespan=lifespan,
+app = FastAPI(lifespan=lifespan)
+
+api_app = FastAPI(
     title=settings.app_display_name,
     version=settings.app_version,
-    summary="No description",
+    summary="Modern authorization server",
     root_path="/api/v1",
 )
+api_app.include_router(main_router)
 
-setup_cors(app)
-setup_exceptions(app)
+setup_cors(api_app)
+setup_exceptions(api_app)
+setup_obs(api_app)
+
+app.mount("/api", api_app)
 app.mount("/admin", admin_app)
-setup_obs(app)
-
-app.include_router(main_router)
+app.mount("/", frontend_app)

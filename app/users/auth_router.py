@@ -3,8 +3,10 @@ from typing import Annotated
 from fastapi import Depends, APIRouter
 from pydantic import EmailStr
 from starlette import status
+from starlette.responses import JSONResponse
 
 from app.schemas import BackendOK, backend_ok
+from app.users.constants import TOKEN_COOKIE_NAME
 from app.users.dependencies import (
     UserServiceDep,
 )
@@ -12,9 +14,9 @@ from app.users.auth import AuthorizationForm
 from app.users.schemas import (
     UserCreate,
     UserRead,
-    BearerToken,
     NotifyVia,
     ResetPassword,
+    BearerToken,
 )
 
 auth_router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -40,12 +42,21 @@ async def register(
 - **Refresh token grant** requires refresh token.
     """,
     status_code=status.HTTP_200_OK,
+    response_model=BearerToken,
 )
 async def get_token(
     service: UserServiceDep,
     form: Annotated[AuthorizationForm, Depends()],
-) -> BearerToken:
-    return await service.authorize(form)
+) -> JSONResponse:
+    token = await service.authorize(form)
+    response = JSONResponse(content=token.model_dump(mode="json"))
+    response.set_cookie(
+        key=TOKEN_COOKIE_NAME,
+        value=token.access_token,
+        httponly=True,
+        max_age=token.expires_in,
+    )
+    return response
 
 
 @auth_router.post(
