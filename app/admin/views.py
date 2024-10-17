@@ -3,6 +3,7 @@ from typing import Any
 import humanize
 from sqladmin import ModelView
 
+from app.clients.models import ClientOrm
 from app.db import SSOAccountOrm, UserOrm
 from app.db.utils import naive_utc
 
@@ -49,6 +50,24 @@ class UserAdmin(BaseView, model=UserOrm):
 
     column_searchable_list = [
         UserOrm.email,
+    ]
+
+
+class ClientAdmin(BaseView, model=ClientOrm):
+    name = "Client"
+    name_plural = "Clients"
+    icon = "fa-solid fa-cube"
+
+    column_list = [
+        ClientOrm.id,
+        ClientOrm.name,
+        ClientOrm.is_active,
+        ClientOrm.created_at,
+        ClientOrm.updated_at,
+    ]
+
+    column_searchable_list = [
+        ClientOrm.name,
     ]
 
 

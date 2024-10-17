@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from sqladmin import Admin
 
 from app.admin.auth import auth_backend
-from app.admin.views import SSOAccountAdmin, UserAdmin
+from app.admin.views import SSOAccountAdmin, UserAdmin, ClientAdmin
 from app.db.connection import async_engine
 
 app = FastAPI()
@@ -11,4 +11,5 @@ admin = Admin(
 )
 
 admin.add_view(UserAdmin)
+admin.add_view(ClientAdmin)
 admin.add_view(SSOAccountAdmin)

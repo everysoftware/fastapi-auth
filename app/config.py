@@ -3,6 +3,7 @@ from typing import Literal
 
 from dotenv import load_dotenv
 
+from app.clients.config import ClientSettings
 from app.cache.config import CacheSettings
 from app.db.config import DBSettings
 from app.mail.config import MailSettings
@@ -30,13 +31,15 @@ class AppSettings(BackendSettings):
     app_debug: bool = False
 
     db: DBSettings = DBSettings()
+
+    cache: CacheSettings = CacheSettings()
+    auth: AuthSettings = AuthSettings()
+    mail: MailSettings = MailSettings()
     cors: CORSSettings = CORSSettings()
+    client: ClientSettings = ClientSettings()
     google: GoogleSettings = GoogleSettings()
     yandex: YandexSettings = YandexSettings()
     telegram: TelegramSettings = TelegramSettings()
-    auth: AuthSettings = AuthSettings()
-    mail: MailSettings = MailSettings()
-    cache: CacheSettings = CacheSettings()
     obs: ObservabilitySettings = ObservabilitySettings()
 
 

@@ -2,7 +2,7 @@ from app.config import settings
 from app.context import users_ctx
 
 
-async def register_default_users() -> None:
+async def register_users() -> None:
     async with users_ctx() as users:
         # Register admin
         user = await users.get_by_email(settings.auth.admin_email)

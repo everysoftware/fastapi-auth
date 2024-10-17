@@ -15,10 +15,6 @@ up:
 up-prod:
 	docker-compose -f docker-compose.yml -f docker-compose-prod.yml up --build -d
 
-.PHONY: db
-db:
-	docker-compose exec -it db psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
-
 .PHONY: logs
 logs:
 	docker-compose logs --since $(LOGS_SINCE) --follow
@@ -42,23 +38,18 @@ lint:
 
 PHONY: generate
 generate:
-	docker-compose up -d
+	docker-compose up db -d
 	alembic revision --autogenerate
 
 PHONY: upgrade
 upgrade:
-	docker-compose up -d
+	docker-compose up db -d
 	alembic upgrade head
 
 PHONY: downgrade
 downgrade:
-	docker-compose up -d
+	docker-compose up db -d
 	alembic downgrade -1
-
-PHONY: test
-test:
-	docker-compose up -d
-	pytest $(TESTS_PATH) -s -v
 
 # Windows only
 PHONY: kill

@@ -4,6 +4,7 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 
 from app.admin.main import app as admin_app
+from app.clients.lifespan import create_clients
 from app.frontend.main import app as frontend_app
 from app.cache.lifespan import ping_redis
 from app.config import settings
@@ -11,14 +12,15 @@ from app.cors import setup_cors
 from app.exc_handlers import setup_exceptions
 from app.obs.setup import setup_obs
 from app.routing import main_router
-from app.users.lifespan import register_default_users
+from app.users.lifespan import register_users
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup tasks
-    await register_default_users()
     await ping_redis()
+    await register_users()
+    await create_clients()
     yield
     # Shutdown tasks
     # ...
